@@ -11,6 +11,6 @@
     <script type="module" src="https://pyscript.net/releases/2024.1.1/core.js"></script>
 </head>
 <body>
-    <h1>hello</h1>
+    <h1>hi</h1>
 </body>
 </html>
