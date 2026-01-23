@@ -25,10 +25,10 @@ const aboutModal = document.getElementById("aboutModal");
 const aboutLink = document.querySelector('a[href="about.html"]'); // เลือกเมนู About
 const closeAbout = document.querySelector(".close-about");
 
-// เมื่อกด About ให้แสดง Modal (แทนการเปลี่ยนหน้า)
+// ในไฟล์ script.js ตรงส่วน About
 aboutLink.addEventListener("click", (e) => {
-    e.preventDefault(); // ป้องกันไม่ให้เปลี่ยนหน้าไป about.html
-    aboutModal.style.display = "block";
+    e.preventDefault(); 
+    aboutModal.style.display = "flex"; // เปลี่ยนจาก block เป็น flex เพื่อให้ CSS จัดกึ่งกลางทำงาน
 });
 
 // เมื่อกดปุ่มกากบาท ให้ปิด Modal
