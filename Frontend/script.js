@@ -1,58 +1,36 @@
+// 1. ประกาศตัวแปรทั้งหมดไว้ด้านบนสุดที่เดียว
 const wrapper = document.querySelector('.wrapper');
-const loginLink= document.querySelector('.login-link');
-const registerLink= document.querySelector('.register-link');
-const btnPopup= document.querySelector('.btnLogin-popup');
-const iconClose= document.querySelector('.icon-close');
+const loginLink = document.querySelector('.login-link');
+const registerLink = document.querySelector('.register-link');
+const btnPopup = document.querySelector('.btnLogin-popup');
+const iconClose = document.querySelector('.icon-close');
 
-if (registerLink) {
-    registerLink.addEventListener('click', () => {
-        wrapper.classList.add('active');
-    });
+// 2. ฟังก์ชันสำหรับ Login/Register (เช็คป้องกัน Error)
+if (registerLink && wrapper) {
+    registerLink.onclick = () => wrapper.classList.add('active');
+}
+if (loginLink && wrapper) {
+    loginLink.onclick = () => wrapper.classList.remove('active');
+}
+if (btnPopup && wrapper) {
+    btnPopup.onclick = () => wrapper.classList.add('active-popup');
+}
+if (iconClose && wrapper) {
+    iconClose.onclick = () => wrapper.classList.remove('active-popup');
 }
 
-if (loginLink) {
-    loginLink.addEventListener('click', () => {
-        wrapper.classList.remove('active');
-    });
-}
-
-if (btnPopup) {
-    btnPopup.addEventListener('click', () => {
-        wrapper.classList.add('active-popup');
-    });
-}
-
-if (iconClose) {
-    iconClose.addEventListener('click', () => {
-        wrapper.classList.remove('active-popup');
-    });
-}
-
-// ดึง Element ต่างๆ มาใช้งาน
 const aboutModal = document.getElementById("aboutModal");
-const aboutLink = document.querySelector('a[href="about.html"]'); // เลือกเมนู About
 const closeAbout = document.querySelector(".close-about");
 
-// ตรวจสอบก่อนว่าในหน้านี้มี aboutModal หรือไม่ (เพื่อไม่ให้หน้าอื่น Error)
-if (aboutModal && aboutLink) {
-    
-    aboutLink.addEventListener("click", (e) => {
-        // เช็คว่าถ้าเป็นหน้า index.html ให้เปิด Modal แทนการไปหน้าใหม่
-        // แต่ถ้าคุณต้องการให้กดแล้วไปหน้า about.html จริงๆ ให้ลบส่วนนี้ออก
-        e.preventDefault(); 
+// 3. ฟังก์ชันสำหรับ About Modal (แก้ไขให้กดครั้งเดียวติด)
+if (closeAbout && aboutModal) {
+    closeAbout.onclick = () => {
+        aboutModal.style.display = "none";
+    };
+}
+
+if (window.location.pathname.includes("about.html")) {
+    if (aboutModal) {
         aboutModal.style.display = "flex";
-    });
-
-    if (closeAbout) {
-        closeAbout.onclick = function() {
-            aboutModal.style.display = "none";
-        }
     }
-
-    // เมื่อกดพื้นที่ว่างข้างนอก Modal ให้ปิดด้วย
-    window.addEventListener('click', (event) => {
-        if (event.target == aboutModal) {
-            aboutModal.style.display = "none";
-        }
-    });
 }
