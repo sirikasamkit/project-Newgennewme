@@ -35,14 +35,14 @@ if (window.location.pathname.includes("about.html")) {
     }
 }
 
+// แก้ไขในไฟล์ script.js ของคุณ
 async function calculateBMI() {
-    const weight = document.getElementById('weight').value;
-    const height = document.getElementById('height').value;
+    const weight = document.getElementById('weight').value; // ดึงค่าน้ำหนักจากหน้าเว็บ
+    const height = document.getElementById('height').value; // ดึงค่าส่วนสูงจากหน้าเว็บ
 
     if (weight > 0 && height > 0) {
         const bmi = (weight / ((height / 100) ** 2)).toFixed(2);
         
-        // กำหนดสถานะตามเกณฑ์ของระบบ NeWGen NewME
         let status = "";
         if (bmi < 18.5) status = "น้ำหนักน้อย / ผอม";
         else if (bmi < 23) status = "ปกติ (สุขภาพดี)";
@@ -54,35 +54,34 @@ async function calculateBMI() {
         document.getElementById('bmi-status').innerText = status;
         document.getElementById('result-area').style.display = "block";
 
-        // --- ส่วนการดึงข้อมูลจาก AI ---
         const resultArea = document.getElementById('result-area');
+        const oldBox = document.getElementById('ai-plan');
+        if(oldBox) oldBox.remove();
+
         const aiResponseBox = document.createElement('div');
         aiResponseBox.id = "ai-plan";
         aiResponseBox.innerHTML = "<p><i>กำลังวิเคราะห์แผนโดย AI...</i></p>";
-        
-        // ลบอันเก่าออกถ้ามีการกดคำนวณซ้ำ
-        const oldBox = document.getElementById('ai-plan');
-        if(oldBox) oldBox.remove();
         resultArea.appendChild(aiResponseBox);
 
         try {
-            const response = await fetch('http://127.0.0.1:5000/api/generate-plan', {
+            const response = await fetch('http://localhost:5000/api/generate-plan', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
                     bmi: bmi, 
-                    status: status, 
-                    weight: weight, // เพิ่มการส่งน้ำหนัก
-                    height: height  // เพิ่มการส่งส่วนสูง
-    })
-});
+                    status: status,
+                    weight: weight, // ส่งค่าน้ำหนักเพิ่มเติมตามที่ Server ต้องการ
+                    height: height  // ส่งค่าส่วนสูงเพิ่มเติมตามที่ Server ต้องการ
+                })
+            });
 
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error || "AI Error");
 
-        const data = await response.json();
-        if (data.error) throw new Error(data.error); // เช็ค Error จากฝั่ง Server
-        aiResponseBox.innerHTML = `<h3>คำแนะนำจาก AI:</h3><div>${data.plan}</div>`;
+            // แสดงแผนที่ AI ส่งมา
+            aiResponseBox.innerHTML = `<h3>คำแนะนำจาก AI:</h3><p>${data.plan}</p>`;
         } catch (error) {
-            aiResponseBox.innerHTML = "<p style='color:red;'>เชื่อมต่อ Server ไม่ได้ (ลืมเปิด Node.js หรือติด CORS)</p>";
+            aiResponseBox.innerHTML = `<p style='color:red;'>เกิดข้อผิดพลาด: ${error.message}</p>`;
         }
     }
 }
