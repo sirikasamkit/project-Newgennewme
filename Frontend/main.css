@@ -334,3 +334,92 @@ header{
     from { transform: translateY(-50px); opacity: 0; }
     to { transform: translateY(0); opacity: 1; }
 }
+
+/* --- ส่วนที่เพิ่มใหม่เพื่อให้ดูดีขึ้น --- */
+
+/* ปรับ Body ให้เลื่อนหน้าจอลงมาได้ */
+body {
+    display: block; 
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+/* สร้าง Container กลางหน้าจอ */
+.content-wrapper {
+    max-width: 900px;
+    margin: 120px auto 50px; /* เว้นที่จาก Header ด้านบน 120px */
+    padding: 0 20px;
+    text-align: center;
+}
+
+/* การ์ดสีขาวโปร่งแสงสำหรับใส่เนื้อหา */
+.info-card {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(10px);
+    padding: 40px;
+    border-radius: 25px;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.05);
+    margin-bottom: 30px;
+    border: 1px solid rgba(255,255,255,0.3);
+}
+
+.info-card h1 {
+    color: #162938;
+    margin-bottom: 15px;
+    font-size: 2.2rem;
+}
+
+.info-card p {
+    color: #455a64;
+    line-height: 1.8;
+    font-size: 1.1rem;
+}
+
+.bmi-image {
+    width: 100%;
+    max-width: 700px;
+    border-radius: 15px;
+    margin: 20px 0;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+}
+
+/* แก้ไขให้ Wrapper (Login) อยู่กึ่งกลางหน้าจอเสมอ ไม่ว่าจะเลื่อนหน้าไปตรงไหน */
+.wrapper {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0);
+    z-index: 1000;
+}
+.wrapper.active-popup {
+    transform: translate(-50%, -50%) scale(1);
+}
+
+.calculator-box {
+    max-width: 400px;
+    margin: 20px auto;
+    text-align: left;
+}
+
+.input-group {
+    margin-bottom: 15px;
+}
+
+.input-group label {
+    display: block;
+    margin-bottom: 5px;
+    color: #162938;
+    font-weight: 600;
+}
+
+.input-group input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    font-size: 1rem;
+}
+
+#result-area {
+    animation: slideDown 0.5s ease;
+}

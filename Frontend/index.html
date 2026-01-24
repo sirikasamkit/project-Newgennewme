@@ -84,6 +84,33 @@
         </form>
   </div>
    </div>
+
+   <main class="content-wrapper">
+    <section class="info-card">
+        <h1>ยินดีต้อนรับสู่ <span class="newgen">NeWGen</span> <span class="newme">NewME</span></h1>
+        <p>เริ่มต้นดูแลสุขภาพของคุณด้วยการประเมินดัชนีมวลกาย (BMI) ที่แม่นยำและรวดเร็ว</p>
+    </section>
+
+    <section class="info-card">
+        <h2 style="margin-bottom: 20px;">คำนวณค่า BMI ของคุณ</h2>
+        <div class="calculator-box">
+            <div class="input-group">
+                <label>น้ำหนัก (กก.):</label>
+                <input type="number" id="weight" placeholder="เช่น 65" min="1">
+            </div>
+            <div class="input-group">
+                <label>ส่วนสูง (ซม.):</label>
+                <input type="number" id="height" placeholder="เช่น 170" min="1">
+            </div>
+            <button onclick="calculateBMI()" class="btn">คำนวณผลลัพธ์</button>
+        </div>
+
+        <div id="result-area" style="display:none; margin-top: 30px; padding: 20px; border-top: 2px solid #162938;">
+            <h3>ค่า BMI ของคุณคือ: <span id="bmi-value" style="color: #162938; font-size: 1.5em;">0</span></h3>
+            <p style="font-size: 1.2rem;">อยู่ในเกณฑ์: <strong id="bmi-status">-</strong></p>
+        </div>
+    </section>
+</main>
    
    <script src="script.js"></script>
    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>

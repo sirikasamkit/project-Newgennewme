@@ -34,3 +34,28 @@ if (window.location.pathname.includes("about.html")) {
         aboutModal.style.display = "flex";
     }
 }
+
+function calculateBMI() {
+    const weight = document.getElementById('weight').value;
+    const height = document.getElementById('height').value / 100; // แปลงหน่วยเป็นเมตร
+
+    if (weight > 0 && height > 0) {
+        const bmi = (weight / (height * height)).toFixed(2);
+        document.getElementById('bmi-value').innerText = bmi;
+        
+        let status = "";
+        if (bmi < 18.5) status = "น้ำหนักน้อย / ผอม";
+        else if (bmi < 23) status = "ปกติ (สุขภาพดี)";
+        else if (bmi < 25) status = "ท้วม / โรคอ้วนระดับ 1";
+        else if (bmi < 30) status = "อ้วน / โรคอ้วนระดับ 2";
+        else status = "อ้วนมาก / โรคอ้วนระดับ 3";
+
+        document.getElementById('bmi-status').innerText = status;
+        document.getElementById('result-area').style.display = "block";
+        
+        // เลื่อนหน้าจอลงมาให้เห็นผลลัพธ์อัตโนมัติ
+        document.getElementById('result-area').scrollIntoView({ behavior: 'smooth' });
+    } else {
+        alert("กรุณากรอกน้ำหนักและส่วนสูงให้ถูกต้องครับ");
+    }
+}
