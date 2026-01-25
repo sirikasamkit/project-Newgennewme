@@ -85,3 +85,12 @@ async function calculateBMI() {
         }
     }
 }
+
+// 4. ฟังก์ชันสำหรับหน้า Services (แจ้งปัญหา)
+function openContactForm() {
+    // วิธีที่ 1: ส่งไปที่หน้า Contact โดยตรง
+    window.location.href = "contact.html";
+    
+    // วิธีที่ 2: หรือถ้าอยากให้ส่งอีเมลทันทีเมื่อกดปุ่ม
+    // window.location.href = "mailto:support@newgen.com?subject=Report an Issue";
+}
