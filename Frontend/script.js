@@ -63,6 +63,7 @@ async function calculateBMI() {
         aiResponseBox.innerHTML = "<p><i>กำลังวิเคราะห์แผนโดย AI...</i></p>";
         resultArea.appendChild(aiResponseBox);
 
+        // ... โค้ดส่วนบนของคุณ ...
         try {
             const response = await fetch('http://localhost:5000/api/generate-plan', {
                 method: 'POST',
@@ -70,19 +71,30 @@ async function calculateBMI() {
                 body: JSON.stringify({ 
                     bmi: bmi, 
                     status: status,
-                    weight: weight, // ส่งค่าน้ำหนักเพิ่มเติมตามที่ Server ต้องการ
-                    height: height  // ส่งค่าส่วนสูงเพิ่มเติมตามที่ Server ต้องการ
+                    weight: weight,
+                    height: height
                 })
             });
 
             const data = await response.json();
             if (!response.ok) throw new Error(data.error || "AI Error");
 
-            // แสดงแผนที่ AI ส่งมา
-            aiResponseBox.innerHTML = `<h3>คำแนะนำจาก AI:</h3><p>${data.plan}</p>`;
+            // --- ส่วนที่แก้ไขเริ่มตรงนี้ ---
+            // ใช้ .replace(/\n/g, '<br>') เพื่อเปลี่ยนการขึ้นบรรทัดใหม่จาก AI ให้เป็นแท็ก <br> ของ HTML
+            const formattedPlan = data.plan.replace(/\n/g, '<br>'); 
+            
+            aiResponseBox.innerHTML = `
+                <div style="background: #f0f4f8; padding: 15px; border-radius: 10px; margin-top: 10px; text-align: left; border-left: 5px solid #162938;">
+                    <h3 style="color: #162938; margin-bottom: 10px;">📋 แผนสุขภาพจาก NeWGen NewME AI:</h3>
+                    <div style="line-height: 1.6; color: #333;">${formattedPlan}</div>
+                </div>`;
+            // --- ส่วนที่แก้ไขสิ้นสุดตรงนี้ ---
+
         } catch (error) {
             aiResponseBox.innerHTML = `<p style='color:red;'>เกิดข้อผิดพลาด: ${error.message}</p>`;
         }
+
+// ... โค้ดส่วนล่างของคุณ ...
     }
 }
 
