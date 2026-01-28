@@ -1,1 +1,1 @@
-ให้สร้าวไฟล์.env แล้วสร้างตัวแปรชื่อว่า GEMINI_API_KEY = keyAPIของคุณในgoogle AI studio
+ให้สร้างไฟล์.env แล้วสร้างตัวแปรชื่อว่า GEMINI_API_KEY = keyAPIของคุณในgoogle AI studio
