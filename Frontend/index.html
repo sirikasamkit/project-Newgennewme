@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>New gen new me</title>
+  <link rel="stylesheet" href="main.css">
+  <link rel="stylesheet" href="https://pyscript.net/releases/2024.1.1/core.css">
+  <script type="module" src="https://pyscript.net/releases/2024.1.1/core.js"></script>
+</head>
+
+<body>
+
+   <header>
+       <h2 class="Logo">
+        <span class="newgen">NeWGen</span>
+        <span class="newme">NewME</span>
+       </h2>
+       <nav class="navigation">
+        <a href="index.html">Home</a>
+        <a href="about.html">About</a>
+        <a href="services.html">Services</a>
+        <a href="contact.html">Contact</a>
+        <button class="btnLogin-popup">Login</button>
+       </nav>
+   </header>
+
+   <div class="wrapper">
+       <span class="icon-close">
+        <ion-icon name="close"></ion-icon>
+      </span>
+
+       <div class="form-box login">
+             <h2>Login</h2>
+             <form action="#">
+              <div class="input-box">
+                <span class="icon"><ion-icon name="mail"></ion-icon></span>
+                <input type="email" id="login-email" required>
+                <label>Email</label>
+              </div>
+              <div class="input-box">
+                <span class="icon"><ion-icon name="lock-closed"></ion-icon></span>
+                <input type="password" id="login-password" required>
+                <label>Password</label>
+              </div>
+              <div class="remember-forgot">
+                <label><input type="checkbox"> remember me</label>
+                <a href="#">Forgot Password?</a>
+              </div>
+              <button type="submit" id="login-btn" class="btn">Login</button>
+              <div class="login-register">
+                <p>Don't have an account? <a href="#"class="register-link">Register</a></p>
+              </div>
+             </form>
+       </div>
+
+       <div class="form-box register">
+        <h2>Registration</h2>
+        <form action="#">
+          <div class="input-box">
+            <span class="icon"><ion-icon name="person"></ion-icon></ion-icon></span>
+            <input type="text" required>
+            <label>Username</label>
+          </div>
+         <div class="input-box">
+           <span class="icon"><ion-icon name="mail"></ion-icon></span>
+           <input type="email" required>
+           <label>Email</label>
+         </div>
+         <div class="input-box">
+           <span class="icon"><ion-icon name="lock-closed"></ion-icon></span>
+           <input type="password" required>
+           <label>Password</label>
+         </div>
+         <div class="remember-forgot">
+           <label><input type="checkbox"> I agree to the terms & conditions</label>
+         </div>
+         <button type="submit" class="btn">Register</button>
+         <div class="login-register">
+           <p>Already have an account? <a href="#"class="login-link">login</a></p>
+         </div>
+        </form>
+  </div>
+   </div>
+
+   <main class="content-wrapper">
+    <section class="info-card">
+        <h1>ยินดีต้อนรับสู่ <span class="newgen">NeWGen</span> <span class="newme">NewME</span></h1>
+        <p>เริ่มต้นดูแลสุขภาพของคุณด้วยการประเมินดัชนีมวลกาย (BMI) ที่แม่นยำและรวดเร็ว</p>
+    </section>
+
+    <section class="info-card">
+        <h2 style="margin-bottom: 20px;">คำนวณค่า BMI ของคุณ</h2>
+        <div class="calculator-box">
+            <div class="input-group">
+                <label>น้ำหนัก (กก.):</label>
+                <input type="number" id="weight" placeholder="เช่น 65" min="1">
+            </div>
+            <div class="input-group">
+                <label>ส่วนสูง (ซม.):</label>
+                <input type="number" id="height" placeholder="เช่น 170" min="1">
+            </div>
+            <button onclick="calculateBMI()" class="btn">คำนวณผลลัพธ์</button>
+        </div>
+
+        <div id="result-area" style="display:none; margin-top: 30px; padding: 20px; border-top: 2px solid #162938;">
+            <h3>ค่า BMI ของคุณคือ: <span id="bmi-value" style="color: #162938; font-size: 1.5em;">0</span></h3>
+            <p style="font-size: 1.2rem;">อยู่ในเกณฑ์: <strong id="bmi-status">-</strong></p>
+        </div>
+    </section>
+</main>
+
+<div id="result-area" style="display:none; margin-top: 30px; padding: 20px; border-top: 2px solid #162938;">
+    <h3>ค่า BMI ของคุณคือ: <span id="bmi-value">0</span></h3>
+    <p>อยู่ในเกณฑ์: <strong id="bmi-status">-</strong></p>
+    </div>
+   
+   <script sret="/Backend/server.js"></script>
+   <script src="script.js"></script>
+   <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+   <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+  </body>
+</html>
