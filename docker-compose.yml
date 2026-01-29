@@ -1,0 +1,35 @@
+services:
+  # ส่วนหน้าเว็บ (Nginx)
+  frontend:
+    image: nginx:alpine
+    container_name: newgen_frontend
+    ports:
+      - "80:80"
+    volumes:
+      - ./frontend:/usr/share/nginx/html
+
+  # ส่วนระบบหลังบ้าน (PHP)
+  backend:
+    image: php:8.2-apache
+    container_name: newgen_backend
+    ports:
+      - "8081:80"
+    volumes:
+      - ./backend:/var/www/html
+    depends_on:
+      - db
+    command: >
+      sh -c "chown -R www-data:www-data /var/www/html && docker-php-ext-install pdo pdo_mysql && apache2-foreground"
+
+  # ฐานข้อมูล (MySQL)
+  db:
+    image: mysql:8.0
+    container_name: newgen_db
+    environment:
+      MYSQL_DATABASE: newgen_db
+      MYSQL_ROOT_PASSWORD: rootpassword
+    volumes:
+      - db_data:/var/lib/mysql
+
+volumes:
+  db_data:

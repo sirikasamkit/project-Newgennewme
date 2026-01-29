@@ -106,3 +106,38 @@ function openContactForm() {
     // วิธีที่ 2: หรือถ้าอยากให้ส่งอีเมลทันทีเมื่อกดปุ่ม
     // window.location.href = "mailto:support@newgen.com?subject=Report an Issue";
 }
+
+// ค้นหา Form Login จาก HTML
+const loginForm = document.querySelector('.form-box.login form');
+
+if (loginForm) {
+    loginForm.onsubmit = async (e) => {
+        e.preventDefault(); // ป้องกันหน้าเว็บรีโหลด
+
+        const email = document.getElementById('login-email').value; //
+        const password = document.getElementById('login-password').value; //
+
+        try {
+            // ส่งข้อมูลไปยัง PHP Backend ที่รันบนพอร์ต 8081
+            const response = await fetch('http://localhost:8081/auth_login.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+
+            const result = await response.json();
+
+            if (result.status === "success") {
+                alert("ยินดีต้อนรับคุณ " + result.user);
+                // ปิดหน้าต่าง Login เมื่อสำเร็จ
+                const wrapper = document.querySelector('.wrapper');
+                wrapper.classList.remove('active-popup');
+            } else {
+                alert(result.message);
+            }
+        } catch (error) {
+            console.error("Login Error:", error);
+            alert("ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้");
+        }
+    };
+}
