@@ -63,7 +63,6 @@ async function calculateBMI() {
         aiResponseBox.innerHTML = "<p><i>กำลังวิเคราะห์แผนโดย AI...</i></p>";
         resultArea.appendChild(aiResponseBox);
 
-        // ... โค้ดส่วนบนของคุณ ...
         try {
             const response = await fetch('http://localhost:5000/api/generate-plan', {
                 method: 'POST',
@@ -79,7 +78,6 @@ async function calculateBMI() {
             const data = await response.json();
             if (!response.ok) throw new Error(data.error || "AI Error");
 
-            // --- ส่วนที่แก้ไขเริ่มตรงนี้ ---
             // ใช้ .replace(/\n/g, '<br>') เพื่อเปลี่ยนการขึ้นบรรทัดใหม่จาก AI ให้เป็นแท็ก <br> ของ HTML
             const formattedPlan = data.plan.replace(/\n/g, '<br>'); 
             
@@ -88,13 +86,11 @@ async function calculateBMI() {
                     <h3 style="color: #162938; margin-bottom: 10px;">📋 แผนสุขภาพจาก NeWGen NewME AI:</h3>
                     <div style="line-height: 1.6; color: #333;">${formattedPlan}</div>
                 </div>`;
-            // --- ส่วนที่แก้ไขสิ้นสุดตรงนี้ ---
 
         } catch (error) {
             aiResponseBox.innerHTML = `<p style='color:red;'>เกิดข้อผิดพลาด: ${error.message}</p>`;
         }
 
-// ... โค้ดส่วนล่างของคุณ ...
     }
 }
 
@@ -105,6 +101,56 @@ function openContactForm() {
     
     // วิธีที่ 2: หรือถ้าอยากให้ส่งอีเมลทันทีเมื่อกดปุ่ม
     // window.location.href = "mailto:support@newgen.com?subject=Report an Issue";
+}
+
+async function analyzeFoodImage() {
+    const fileInput = document.getElementById('food-image');
+    const resultArea = document.getElementById('food-result-area');
+    const contentArea = document.getElementById('food-analysis-content');
+
+    if (fileInput.files.length === 0) {
+        alert("กรุณาเลือกรูปภาพก่อนครับ");
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append('image', fileInput.files[0]);
+
+    resultArea.style.display = "block";
+    contentArea.innerHTML = "<i>AI กำลังมองดูอาหารของคุณ...</i>";
+
+    try {
+        const response = await fetch('http://localhost:5000/api/analyze-food', {
+            method: 'POST',
+            body: formData // ส่งเป็น FormData สำหรับไฟล์
+        });
+
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || "AI Error");
+
+        // แสดงผลลัพธ์ที่ได้จาก AI (Gemini)
+        contentArea.innerHTML = data.analysis.replace(/\n/g, '<br>');
+
+    } catch (error) {
+        contentArea.innerHTML = `<p style='color:red;'>เกิดข้อผิดพลาด: ${error.message}</p>`;
+    }
+}
+
+function previewImage(event) {
+    const reader = new FileReader();
+    const previewContainer = document.getElementById('image-preview-container');
+    const previewImg = document.getElementById('preview-img');
+
+    reader.onload = function() {
+        if (reader.readyState === 2) {
+            previewImg.src = reader.result;
+            previewContainer.style.display = "block"; // แสดง Container เมื่อโหลดรูปเสร็จ
+        }
+    }
+
+    if (event.target.files[0]) {
+        reader.readAsDataURL(event.target.files[0]);
+    }
 }
 
 // ค้นหา Form Login จาก HTML

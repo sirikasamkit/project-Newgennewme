@@ -116,6 +116,28 @@
     <h3>ค่า BMI ของคุณคือ: <span id="bmi-value">0</span></h3>
     <p>อยู่ในเกณฑ์: <strong id="bmi-status">-</strong></p>
     </div>
+
+    <section class="info-card">
+    <h2 style="margin-bottom: 20px;">วิเคราะห์แคลอรี่จากรูปอาหาร (AI Scan)</h2>
+    <div class="calculator-box">
+       <div class="input-group">
+          <label>เลือกรูปภาพอาหารของคุณ:</label>
+          <input type="file" id="food-image" accept="image/*" onchange="previewImage(event)">
+       </div>
+
+        <div 
+          id="image-preview-container" style="display:none; margin-bottom: 20px; text-align: center;">
+              <img id="preview-img" src="#" alt="Food Preview" style="max-width: 100%; border-radius: 10px; margin-top: 10px;">
+        </div>
+
+        <button onclick="analyzeFoodImage()" class="btn">สแกนแคลอรี่</button>
+    </div>
+
+    <div id="food-result-area" style="display:none; margin-top: 30px; padding: 20px; border-top: 2px solid #162938; text-align: left;">
+        <h3 style="color: #162938;">ผลการวิเคราะห์:</h3>
+        <div id="food-analysis-content" style="line-height: 1.6; color: #333;"></div>
+    </div>
+</section>
    
    <script sret="/Backend/server.js"></script>
    <script src="script.js"></script>

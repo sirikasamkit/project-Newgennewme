@@ -2,10 +2,15 @@ const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
 const { GoogleGenerativeAI } = require("@google/generative-ai");
+const multer = require('multer');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+//ตั้งค่าการเก็บไฟล์รูปภาพชั่วคราว
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
@@ -33,7 +38,41 @@ app.post('/api/generate-plan', async (req, res) => {
         console.error(err);
         res.status(500).json({ error: err.message });
     }
-    });
+});
+
+app.post('/api/analyze-food', upload.single('image'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ error: "กรุณาอัปโหลดรูปภาพ" });
+        }
+
+        // ประมวลผลรูปภาพ
+        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+
+        const imagePart = {
+            inlineData: {
+                data: req.file.buffer.toString("base64"),
+                mimeType: req.file.mimetype
+            }
+        };
+
+        const prompt = `ในฐานะนักโภชนาการจาก NeWGen NewME ช่วยวิเคราะห์รูปอาหารนี้:
+        1. ชื่ออาหารคืออะไร?
+        2. ประมาณการแคลอรี่ (kcal)
+        3. สารอาหารหลัก (โปรตีน, คาร์บ, ไขมัน)
+        4. คำแนะนำสุขภาพสั้นๆ
+        ตอบเป็นภาษาไทยและใช้ Bullet point`;
+
+        const result = await model.generateContent([prompt, imagePart]);
+        const response = await result.response;
+        
+        res.json({ analysis: response.text() });
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "AI ไม่สามารถวิเคราะห์รูปนี้ได้" });
+    }
+});
 
 app.listen(5000, () => {
   console.log("✅ Server running on http://localhost:5000");
