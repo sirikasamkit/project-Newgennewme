@@ -14,6 +14,11 @@ const upload = multer({ storage: storage });
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
+// Add a root route for checking server status
+app.get('/', (req, res) => {
+    res.send("✅ Server is running! Please use the Frontend to access the API.");
+});
+
 app.post('/api/generate-plan', async (req, res) => {
     try {
         const { bmi, weight, height, status } = req.body;
@@ -65,7 +70,7 @@ app.post('/api/analyze-food', upload.single('image'), async (req, res) => {
 
         const result = await model.generateContent([prompt, imagePart]);
         const response = await result.response;
-        
+
         res.json({ analysis: response.text() });
 
     } catch (err) {
@@ -75,55 +80,74 @@ app.post('/api/analyze-food', upload.single('image'), async (req, res) => {
 });
 
 app.listen(5000, () => {
-  console.log("✅ Server running on http://localhost:5000");
+    console.log("✅ Server running on http://localhost:5000");
 });
 
-const mysql = require('mysql2/promise');
+const sqlite3 = require('sqlite3').verbose();
 const bcrypt = require('bcrypt');
+const path = require('path');
 
-// ตั้งค่าการเชื่อมต่อ
-const dbConfig = {
-    host: 'db', // ชื่อ service ใน docker-compose
-    user: 'root',
-    password: 'rootpassword',
-    database: 'newgen_db'
-};
+// ตั้งค่า Database (SQLite) - สร้างไฟล์database.sqlite ในโฟลเดอร์เดียวกัน
+const dbPath = path.resolve(__dirname, 'database.sqlite');
+const db = new sqlite3.Database(dbPath, (err) => {
+    if (err) {
+        console.error('❌ Could not connect to database', err);
+    } else {
+        console.log('✅ Connected to SQLite database');
+    }
+});
 
-// API สำหรับสมัครสมาชิก (เพิ่มเข้าไปใน server.js เดิม)
+// สร้างตาราง users ถ้ายังไม่มี
+db.serialize(() => {
+    db.run(`CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT,
+        email TEXT UNIQUE,
+        password TEXT
+    )`);
+});
+
+// API สำหรับสมัครสมาชิก
 app.post('/api/register', async (req, res) => {
+    const { username, email, password } = req.body;
+    
     try {
-        const { username, email, password } = req.body;
-        const hashedPassword = await bcrypt.hash(password, 10); // เข้ารหัสลับ
-
-        const connection = await mysql.createConnection(dbConfig);
-        await connection.execute(
-            'INSERT INTO users (username, email, password) VALUES (?, ?, ?)',
-            [username, email, hashedPassword]
-        );
-        res.json({ status: "success", message: "ลงทะเบียนเรียบร้อย" });
+        const hashedPassword = await bcrypt.hash(password, 10);
+        
+        const sql = `INSERT INTO users (username, email, password) VALUES (?, ?, ?)`;
+        db.run(sql, [username, email, hashedPassword], function(err) {
+            if (err) {
+                if (err.message.includes('UNIQUE constraint failed')) {
+                    return res.status(500).json({ error: "อีเมลนี้มีผู้ใช้งานแล้ว" });
+                }
+                return res.status(500).json({ error: err.message });
+            }
+            res.json({ status: "success", message: "ลงทะเบียนเรียบร้อย", userId: this.lastID });
+        });
     } catch (err) {
-        res.status(500).json({ error: "อีเมลนี้มีในระบบแล้ว" });
+        res.status(500).json({ error: "Server error" });
     }
 });
 
 // API สำหรับ Login
-app.post('/api/login', async (req, res) => {
-    try {
-        const { email, password } = req.body;
-        const connection = await mysql.createConnection(dbConfig);
-        const [rows] = await connection.execute('SELECT * FROM users WHERE email = ?', [email]);
-
-        if (rows.length > 0) {
-            const match = await bcrypt.compare(password, rows[0].password);
+app.post('/api/login', (req, res) => {
+    const { email, password } = req.body;
+    
+    const sql = `SELECT * FROM users WHERE email = ?`;
+    db.get(sql, [email], async (err, row) => {
+        if (err) {
+            return res.status(500).json({ error: err.message });
+        }
+        
+        if (row) {
+            const match = await bcrypt.compare(password, row.password);
             if (match) {
-                res.json({ status: "success", user: rows[0].username });
+                res.json({ status: "success", user: row.username });
             } else {
                 res.status(401).json({ message: "รหัสผ่านไม่ถูกต้อง" });
             }
         } else {
             res.status(404).json({ message: "ไม่พบผู้ใช้นี้" });
         }
-    } catch (err) {
-        res.status(500).json({ error: err.message });
-    }
+    });
 });

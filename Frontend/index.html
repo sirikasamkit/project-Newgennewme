@@ -13,135 +13,137 @@
 
 <body>
 
-   <header>
-       <h2 class="Logo">
-        <span class="newgen">NeWGen</span>
-        <span class="newme">NewME</span>
-       </h2>
-       <nav class="navigation">
-        <a href="index.html">Home</a>
-        <a href="about.html">About</a>
-        <a href="services.html">Services</a>
-        <a href="contact.html">Contact</a>
-        <button class="btnLogin-popup">Login</button>
-       </nav>
-   </header>
+  <header>
+    <h2 class="Logo">
+      <span class="newgen">NeWGen</span>
+      <span class="newme">NewME</span>
+    </h2>
+    <nav class="navigation">
+      <a href="index.html">Home</a>
+      <a href="about.html">About</a>
+      <a href="services.html">Services</a>
+      <a href="contact.html">Contact</a>
+      <button class="btnLogin-popup">Login</button>
+    </nav>
+  </header>
 
-   <div class="wrapper">
-       <span class="icon-close">
-        <ion-icon name="close"></ion-icon>
-      </span>
+  <div class="wrapper">
+    <span class="icon-close">
+      <ion-icon name="close"></ion-icon>
+    </span>
 
-       <div class="form-box login">
-             <h2>Login</h2>
-             <form action="#">
-              <div class="input-box">
-                <span class="icon"><ion-icon name="mail"></ion-icon></span>
-                <input type="email" id="login-email" required>
-                <label>Email</label>
-              </div>
-              <div class="input-box">
-                <span class="icon"><ion-icon name="lock-closed"></ion-icon></span>
-                <input type="password" id="login-password" required>
-                <label>Password</label>
-              </div>
-              <div class="remember-forgot">
-                <label><input type="checkbox"> remember me</label>
-                <a href="#">Forgot Password?</a>
-              </div>
-              <button type="submit" id="login-btn" class="btn">Login</button>
-              <div class="login-register">
-                <p>Don't have an account? <a href="#"class="register-link">Register</a></p>
-              </div>
-             </form>
-       </div>
+    <div class="form-box login">
+      <h2>Login</h2>
+      <form action="#">
+        <div class="input-box">
+          <span class="icon"><ion-icon name="mail"></ion-icon></span>
+          <input type="email" id="login-email" required>
+          <label>Email</label>
+        </div>
+        <div class="input-box">
+          <span class="icon"><ion-icon name="lock-closed"></ion-icon></span>
+          <input type="password" id="login-password" required>
+          <label>Password</label>
+        </div>
+        <div class="remember-forgot">
+          <label><input type="checkbox"> remember me</label>
+          <a href="#">Forgot Password?</a>
+        </div>
+        <button type="submit" id="login-btn" class="btn">Login</button>
+        <div class="login-register">
+          <p>Don't have an account? <a href="#" class="register-link">Register</a></p>
+        </div>
+      </form>
+    </div>
 
-       <div class="form-box register">
-        <h2>Registration</h2>
-        <form action="#">
-          <div class="input-box">
-            <span class="icon"><ion-icon name="person"></ion-icon></ion-icon></span>
-            <input type="text" required>
-            <label>Username</label>
-          </div>
-         <div class="input-box">
-           <span class="icon"><ion-icon name="mail"></ion-icon></span>
-           <input type="email" required>
-           <label>Email</label>
-         </div>
-         <div class="input-box">
-           <span class="icon"><ion-icon name="lock-closed"></ion-icon></span>
-           <input type="password" required>
-           <label>Password</label>
-         </div>
-         <div class="remember-forgot">
-           <label><input type="checkbox"> I agree to the terms & conditions</label>
-         </div>
-         <button type="submit" class="btn">Register</button>
-         <div class="login-register">
-           <p>Already have an account? <a href="#"class="login-link">login</a></p>
-         </div>
-        </form>
+    <div class="form-box register">
+      <h2>Registration</h2>
+      <form action="#">
+        <div class="input-box">
+          <span class="icon"><ion-icon name="person"></ion-icon></span>
+          <input type="text" id="reg-username" required>
+          <label>Username</label>
+        </div>
+        <div class="input-box">
+          <span class="icon"><ion-icon name="mail"></ion-icon></span>
+          <input type="email" id="reg-email" required>
+          <label>Email</label>
+        </div>
+        <div class="input-box">
+          <span class="icon"><ion-icon name="lock-closed"></ion-icon></span>
+          <input type="password" id="reg-password" required>
+          <label>Password</label>
+        </div>
+        <div class="remember-forgot">
+          <label><input type="checkbox"> I agree to the terms & conditions</label>
+        </div>
+        <button type="submit" class="btn">Register</button>
+        <div class="login-register">
+          <p>Already have an account? <a href="#" class="login-link">login</a></p>
+        </div>
+      </form>
+    </div>
   </div>
-   </div>
 
-   <main class="content-wrapper">
+  <main class="content-wrapper">
     <section class="info-card">
-        <h1>ยินดีต้อนรับสู่ <span class="newgen">NeWGen</span> <span class="newme">NewME</span></h1>
-        <p>เริ่มต้นดูแลสุขภาพของคุณด้วยการประเมินดัชนีมวลกาย (BMI) ที่แม่นยำและรวดเร็ว</p>
+      <h1>ยินดีต้อนรับสู่ <span class="newgen">NeWGen</span> <span class="newme">NewME</span></h1>
+      <p>เริ่มต้นดูแลสุขภาพของคุณด้วยการประเมินดัชนีมวลกาย (BMI) ที่แม่นยำและรวดเร็ว</p>
     </section>
 
     <section class="info-card">
-        <h2 style="margin-bottom: 20px;">คำนวณค่า BMI ของคุณ</h2>
-        <div class="calculator-box">
-            <div class="input-group">
-                <label>น้ำหนัก (กก.):</label>
-                <input type="number" id="weight" placeholder="เช่น 65" min="1">
-            </div>
-            <div class="input-group">
-                <label>ส่วนสูง (ซม.):</label>
-                <input type="number" id="height" placeholder="เช่น 170" min="1">
-            </div>
-            <button onclick="calculateBMI()" class="btn">คำนวณผลลัพธ์</button>
+      <h2 style="margin-bottom: 20px;">คำนวณค่า BMI ของคุณ</h2>
+      <div class="calculator-box">
+        <div class="input-group">
+          <label>น้ำหนัก (กก.):</label>
+          <input type="number" id="weight" placeholder="เช่น 65" min="1">
         </div>
+        <div class="input-group">
+          <label>ส่วนสูง (ซม.):</label>
+          <input type="number" id="height" placeholder="เช่น 170" min="1">
+        </div>
+        <button onclick="calculateBMI()" class="btn">คำนวณผลลัพธ์</button>
+      </div>
 
-        <div id="result-area" style="display:none; margin-top: 30px; padding: 20px; border-top: 2px solid #162938;">
-            <h3>ค่า BMI ของคุณคือ: <span id="bmi-value" style="color: #162938; font-size: 1.5em;">0</span></h3>
-            <p style="font-size: 1.2rem;">อยู่ในเกณฑ์: <strong id="bmi-status">-</strong></p>
-        </div>
+      <div id="result-area" style="display:none; margin-top: 30px; padding: 20px; border-top: 2px solid #162938;">
+        <h3>ค่า BMI ของคุณคือ: <span id="bmi-value" style="color: #162938; font-size: 1.5em;">0</span></h3>
+        <p style="font-size: 1.2rem;">อยู่ในเกณฑ์: <strong id="bmi-status">-</strong></p>
+      </div>
     </section>
-</main>
+  </main>
 
-<div id="result-area" style="display:none; margin-top: 30px; padding: 20px; border-top: 2px solid #162938;">
+  <div id="result-area" style="display:none; margin-top: 30px; padding: 20px; border-top: 2px solid #162938;">
     <h3>ค่า BMI ของคุณคือ: <span id="bmi-value">0</span></h3>
     <p>อยู่ในเกณฑ์: <strong id="bmi-status">-</strong></p>
-    </div>
+  </div>
 
-    <section class="info-card">
+  <section class="info-card">
     <h2 style="margin-bottom: 20px;">วิเคราะห์แคลอรี่จากรูปอาหาร (AI Scan)</h2>
     <div class="calculator-box">
-       <div class="input-group">
-          <label>เลือกรูปภาพอาหารของคุณ:</label>
-          <input type="file" id="food-image" accept="image/*" onchange="previewImage(event)">
-       </div>
+      <div class="input-group">
+        <label>เลือกรูปภาพอาหารของคุณ:</label>
+        <input type="file" id="food-image" accept="image/*" onchange="previewImage(event)">
+      </div>
 
-        <div 
-          id="image-preview-container" style="display:none; margin-bottom: 20px; text-align: center;">
-              <img id="preview-img" src="#" alt="Food Preview" style="max-width: 100%; border-radius: 10px; margin-top: 10px;">
-        </div>
+      <div id="image-preview-container" style="display:none; margin-bottom: 20px; text-align: center;">
+        <img id="preview-img" src="#" alt="Food Preview"
+          style="max-width: 100%; border-radius: 10px; margin-top: 10px;">
+      </div>
 
-        <button onclick="analyzeFoodImage()" class="btn">สแกนแคลอรี่</button>
+      <button onclick="analyzeFoodImage()" class="btn">สแกนแคลอรี่</button>
     </div>
 
-    <div id="food-result-area" style="display:none; margin-top: 30px; padding: 20px; border-top: 2px solid #162938; text-align: left;">
-        <h3 style="color: #162938;">ผลการวิเคราะห์:</h3>
-        <div id="food-analysis-content" style="line-height: 1.6; color: #333;"></div>
+    <div id="food-result-area"
+      style="display:none; margin-top: 30px; padding: 20px; border-top: 2px solid #162938; text-align: left;">
+      <h3 style="color: #162938;">ผลการวิเคราะห์:</h3>
+      <div id="food-analysis-content" style="line-height: 1.6; color: #333;"></div>
     </div>
-</section>
-   
-   <script sret="/Backend/server.js"></script>
-   <script src="script.js"></script>
-   <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
-   <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
-  </body>
+  </section>
+
+  <script sret="/Backend/server.js"></script>
+  <script src="script.js"></script>
+  <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+  <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+</body>
+
 </html>
