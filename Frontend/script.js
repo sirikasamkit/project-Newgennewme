@@ -64,14 +64,10 @@ async function calculateBMI() {
         resultArea.appendChild(aiResponseBox);
 
         try {
-            const response = await fetch('http://localhost:5000/api/generate-plan', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    bmi: bmi, 
-                    status: status,
-                    weight: weight,
-                    height: height
+            const response = await fetch('http://localhost:5000/api/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password 
                 })
             });
 

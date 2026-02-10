@@ -77,3 +77,53 @@ app.post('/api/analyze-food', upload.single('image'), async (req, res) => {
 app.listen(5000, () => {
   console.log("✅ Server running on http://localhost:5000");
 });
+
+const mysql = require('mysql2/promise');
+const bcrypt = require('bcrypt');
+
+// ตั้งค่าการเชื่อมต่อ
+const dbConfig = {
+    host: 'db', // ชื่อ service ใน docker-compose
+    user: 'root',
+    password: 'rootpassword',
+    database: 'newgen_db'
+};
+
+// API สำหรับสมัครสมาชิก (เพิ่มเข้าไปใน server.js เดิม)
+app.post('/api/register', async (req, res) => {
+    try {
+        const { username, email, password } = req.body;
+        const hashedPassword = await bcrypt.hash(password, 10); // เข้ารหัสลับ
+
+        const connection = await mysql.createConnection(dbConfig);
+        await connection.execute(
+            'INSERT INTO users (username, email, password) VALUES (?, ?, ?)',
+            [username, email, hashedPassword]
+        );
+        res.json({ status: "success", message: "ลงทะเบียนเรียบร้อย" });
+    } catch (err) {
+        res.status(500).json({ error: "อีเมลนี้มีในระบบแล้ว" });
+    }
+});
+
+// API สำหรับ Login
+app.post('/api/login', async (req, res) => {
+    try {
+        const { email, password } = req.body;
+        const connection = await mysql.createConnection(dbConfig);
+        const [rows] = await connection.execute('SELECT * FROM users WHERE email = ?', [email]);
+
+        if (rows.length > 0) {
+            const match = await bcrypt.compare(password, rows[0].password);
+            if (match) {
+                res.json({ status: "success", user: rows[0].username });
+            } else {
+                res.status(401).json({ message: "รหัสผ่านไม่ถูกต้อง" });
+            }
+        } else {
+            res.status(404).json({ message: "ไม่พบผู้ใช้นี้" });
+        }
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
