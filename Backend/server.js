@@ -3,10 +3,14 @@ const cors = require('cors');
 require('dotenv').config();
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const multer = require('multer');
+const path = require('path');
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+// Serve static files from the Frontend directory
+app.use(express.static(path.join(__dirname, '../Frontend')));
 
 //ตั้งค่าการเก็บไฟล์รูปภาพชั่วคราว
 const storage = multer.memoryStorage();
@@ -14,9 +18,9 @@ const upload = multer({ storage: storage });
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-// Add a root route for checking server status
+// Send index.html for the root route
 app.get('/', (req, res) => {
-    res.send("✅ Server is running! Please use the Frontend to access the API.");
+    res.sendFile(path.join(__dirname, '../Frontend/index.html'));
 });
 
 app.post('/api/generate-plan', async (req, res) => {
@@ -79,13 +83,24 @@ app.post('/api/analyze-food', upload.single('image'), async (req, res) => {
     }
 });
 
-app.listen(5000, () => {
+app.listen(5000, '0.0.0.0', () => {
     console.log("✅ Server running on http://localhost:5000");
+
+    // Display LAN IP for remote access
+    const { networkInterfaces } = require('os');
+    const nets = networkInterfaces();
+    for (const name of Object.keys(nets)) {
+        for (const net of nets[name]) {
+            if (net.family === 'IPv4' && !net.internal) {
+                console.log(`📲 Remote Device use: http://${net.address}:5000`);
+            }
+        }
+    }
 });
 
 const sqlite3 = require('sqlite3').verbose();
 const bcrypt = require('bcrypt');
-const path = require('path');
+
 
 // ตั้งค่า Database (SQLite) - สร้างไฟล์database.sqlite ในโฟลเดอร์เดียวกัน
 const dbPath = path.resolve(__dirname, 'database.sqlite');
@@ -110,12 +125,12 @@ db.serialize(() => {
 // API สำหรับสมัครสมาชิก
 app.post('/api/register', async (req, res) => {
     const { username, email, password } = req.body;
-    
+
     try {
         const hashedPassword = await bcrypt.hash(password, 10);
-        
+
         const sql = `INSERT INTO users (username, email, password) VALUES (?, ?, ?)`;
-        db.run(sql, [username, email, hashedPassword], function(err) {
+        db.run(sql, [username, email, hashedPassword], function (err) {
             if (err) {
                 if (err.message.includes('UNIQUE constraint failed')) {
                     return res.status(500).json({ error: "อีเมลนี้มีผู้ใช้งานแล้ว" });
@@ -132,13 +147,13 @@ app.post('/api/register', async (req, res) => {
 // API สำหรับ Login
 app.post('/api/login', (req, res) => {
     const { email, password } = req.body;
-    
+
     const sql = `SELECT * FROM users WHERE email = ?`;
     db.get(sql, [email], async (err, row) => {
         if (err) {
             return res.status(500).json({ error: err.message });
         }
-        
+
         if (row) {
             const match = await bcrypt.compare(password, row.password);
             if (match) {
@@ -149,5 +164,19 @@ app.post('/api/login', (req, res) => {
         } else {
             res.status(404).json({ message: "ไม่พบผู้ใช้นี้" });
         }
+    });
+});
+
+// API สำหรับตรวจสอบข้อมูล User (Debug)
+app.get('/api/users', (req, res) => {
+    const sql = "SELECT * FROM users";
+    db.all(sql, [], (err, rows) => {
+        if (err) {
+            return res.status(500).json({ error: err.message });
+        }
+        res.json({
+            message: "List of users",
+            data: rows
+        });
     });
 });
