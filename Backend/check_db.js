@@ -1,34 +1,28 @@
-const mysql = require('mysql2/promise');
-require('dotenv').config();
+const sqlite3 = require('sqlite3').verbose();
+const path = require('path');
 
-const dbConfig = {
-    host: process.env.DB_HOST || 'localhost',
-    user: process.env.DB_USER || 'root',
-    password: process.env.DB_PASSWORD || 'rootpassword',
-    database: process.env.DB_NAME || 'newgen_db'
-};
+const dbPath = path.resolve(__dirname, 'database.sqlite');
+const db = new sqlite3.Database(dbPath, sqlite3.OPEN_READONLY, (err) => {
+    if (err) {
+        console.error('❌ Error connecting to database:', err.message);
+        return;
+    }
+    console.log('✅ Connected to SQLite database');
+});
 
-async function checkData() {
-    try {
-        const connection = await mysql.createConnection(dbConfig);
-        console.log("✅ Connected to database successfully!");
-
-        const [rows] = await connection.execute('SELECT * FROM users');
-
+db.serialize(() => {
+    db.all("SELECT * FROM users", [], (err, rows) => {
+        if (err) {
+            console.error('❌ Error querying data:', err.message);
+            return;
+        }
         if (rows.length === 0) {
             console.log("📭 No users found in the database.");
         } else {
             console.log(`📊 Found ${rows.length} users:`);
             console.table(rows);
         }
+    });
+});
 
-        await connection.end();
-    } catch (err) {
-        console.error("❌ Error connecting to database:");
-        console.error("   Code:", err.code);
-        console.error("   Message:", err.message);
-        console.error("   Error Object:", err);
-    }
-}
-
-checkData();
+db.close();
