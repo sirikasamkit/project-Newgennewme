@@ -65,7 +65,7 @@ async function calculateBMI() {
 
         try {
             // เรียกใช้ API ของ Node.js (ไม่ใช่ PHP)
-            const response = await fetch('http://localhost:5000/api/generate-plan', {
+            const response = await fetch('/api/generate-plan', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ bmi, weight, height, status })
@@ -116,7 +116,7 @@ async function analyzeFoodImage() {
     contentArea.innerHTML = "<i>AI กำลังมองดูอาหารของคุณ...</i>";
 
     try {
-        const response = await fetch('http://localhost:5000/api/analyze-food', {
+        const response = await fetch('/api/analyze-food', {
             method: 'POST',
             body: formData // ส่งเป็น FormData สำหรับไฟล์
         });
@@ -161,7 +161,7 @@ if (loginForm) {
 
         try {
             // ส่งข้อมูลไปยัง Node.js Backend Port 5000
-            const response = await fetch('http://localhost:5000/api/login', {
+            const response = await fetch('/api/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password })
@@ -200,7 +200,7 @@ if (registerForm) {
         const password = document.getElementById('reg-password').value;
 
         try {
-            const response = await fetch('http://localhost:5000/api/register', {
+            const response = await fetch('/api/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username, email, password })
