@@ -1,0 +1,41 @@
+services:
+  # ส่วนหน้าเว็บ (Nginx) ยังคงเดิม
+  frontend:
+    image: nginx:alpine
+    container_name: newgen_frontend
+    ports:
+      - "80:80"
+    volumes:
+      - .:/usr/share/nginx/html # ปรับ path ให้ตรงกับโฟลเดอร์ที่คุณเก็บไฟล์ html
+
+  # เปลี่ยนจาก PHP เป็น Node.js
+  backend:
+    build: .
+    container_name: newgen_backend_node
+    ports:
+      - "5000:5000"
+    volumes:
+      - .:/usr/src/app
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY} # ดึงจากไฟล์ .env
+      - DB_HOST=db
+      - DB_USER=root
+      - DB_PASS=rootpassword
+      - DB_NAME=newgen_db
+    depends_on:
+      - db
+
+  # ฐานข้อมูล (MySQL)
+  db:
+    image: mysql:8.0
+    container_name: newgen_db
+    environment:
+      MYSQL_DATABASE: newgen_db
+      MYSQL_ROOT_PASSWORD: rootpassword
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+
+volumes:
+  db_data:

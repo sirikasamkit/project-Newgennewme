@@ -1,0 +1,13 @@
+FROM node:18
+
+WORKDIR /usr/src/app
+
+# ก๊อปปี้ไฟล์การตั้งค่า Library
+COPY package*.json ./
+RUN npm install
+
+# ก๊อปปี้โค้ดทั้งหมด (รวมถึง server.js)
+COPY . .
+
+EXPOSE 5000
+CMD ["node", "server.js"]
