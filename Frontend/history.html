@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New gen new me - History</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Prompt:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="main.css">
+    <link rel="stylesheet" href="https://pyscript.net/releases/2024.1.1/core.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+
+    <header>
+        <h2 class="Logo">
+            <span class="newgen">NeWGen</span>
+            <span class="newme">NewME</span>
+        </h2>
+        <nav class="navigation">
+            <a href="index.html">Home</a>
+            <a href="about.html">About</a>
+            <a href="services.html">Services</a>
+            <a href="contact.html">Contact</a>
+            <a href="history.html" id="nav-history-btn"
+                style="display:none; color: #0ea5e9; font-weight: bold;">History</a>
+            <button id="theme-toggle" onclick="toggleTheme()" title="Toggle Dark Mode"></button>
+            <a href="admin.html" id="nav-admin-btn" style="display:none; color: #ffeb3b; font-weight: bold;">Admin
+                Panel</a>
+            <button id="nav-login-btn" class="btnLogin-popup">Login</button>
+            <button id="nav-logout-btn" class="btn"
+                style="display:none; background: #e74c3c; border-color: #c0392b; color: white;"
+                onclick="logout()">Logout</button>
+        </nav>
+    </header>
+
+    <!-- Login/Register Popup (Required for auth flows) -->
+    <div class="wrapper">
+        <span class="icon-close">
+            <ion-icon name="close"></ion-icon>
+        </span>
+
+        <div class="form-box login">
+            <h2>Login</h2>
+            <form action="#">
+                <div class="input-box">
+                    <span class="icon"><ion-icon name="mail"></ion-icon></span>
+                    <input type="email" id="login-email" required>
+                    <label>Email</label>
+                </div>
+                <div class="input-box">
+                    <span class="icon"><ion-icon name="lock-closed"></ion-icon></span>
+                    <input type="password" id="login-password" required>
+                    <label>Password</label>
+                </div>
+                <div class="remember-forgot">
+                    <label><input type="checkbox"> remember me</label>
+                    <a href="#">Forgot Password?</a>
+                </div>
+                <button type="submit" id="login-btn" class="btn">Login</button>
+                <div class="login-register">
+                    <p>Don't have an account? <a href="#" class="register-link">Register</a></p>
+                </div>
+            </form>
+        </div>
+
+        <div class="form-box register">
+            <h2>Registration</h2>
+            <form action="#">
+                <div class="input-box">
+                    <span class="icon"><ion-icon name="person"></ion-icon></span>
+                    <input type="text" id="reg-username" required>
+                    <label>Username</label>
+                </div>
+                <div class="input-box">
+                    <span class="icon"><ion-icon name="mail"></ion-icon></span>
+                    <input type="email" id="reg-email" required>
+                    <label>Email</label>
+                </div>
+                <div class="input-box">
+                    <span class="icon"><ion-icon name="lock-closed"></ion-icon></span>
+                    <input type="password" id="reg-password" required>
+                    <label>Password</label>
+                </div>
+                <div class="remember-forgot">
+                    <label><input type="checkbox"> I agree to the terms & conditions</label>
+                </div>
+                <button type="submit" class="btn">Register</button>
+                <div class="login-register">
+                    <p>Already have an account? <a href="#" class="login-link">login</a></p>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <main class="content-wrapper">
+        <!-- View สำหรับคนที่ยังไม่ได้ล็อกอิน (Guest) -->
+        <div id="guest-view">
+            <section class="info-card">
+                <h1>กรุณาเข้าสู่ระบบ</h1>
+                <p>คุณต้องเข้าสู่ระบบก่อนเพื่อดูประวัติสุขภาพของคุณ</p>
+                <p style="margin-top: 15px;">
+                    <a href="#" onclick="document.querySelector('.wrapper').classList.add('active-popup')"
+                        style="color:#0ea5e9; font-weight: bold;">คลิกที่นี่เพื่อเข้าสู่ระบบ</a>
+                </p>
+            </section>
+        </div>
+
+        <!-- View สำหรับคนที่ล็อกอินแล้ว (Dashboard) -->
+        <div id="dashboard-view" style="display: none;">
+            <section class="info-card" id="history-section">
+                <h1 style="margin-bottom: 20px;">ประวัติของคุณ (History)</h1>
+
+                <div class="calculator-box" style="margin-bottom: 20px;">
+                    <p style="text-align: left; margin-bottom: 15px;">ดูประวัติการคำนวณ BMI, ประวัติการสแกนอาหาร,
+                        และแผนสุขภาพจาก AI ที่บันทึกไว้</p>
+                    <button onclick="loadHistory()" class="btn"
+                        style="width: auto; padding: 10px 20px;">โหลดประวัติข้อมูล</button>
+                </div>
+
+                <div id="chart-container"
+                    style="display:none; margin-bottom: 20px; background: var(--card-bg, rgba(255,255,255,0.8)); padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                    <h3 style="color: #0ea5e9; text-align: left; margin-bottom: 15px;">📈 กราฟแนวโน้มน้ำหนัก</h3>
+                    <canvas id="historyChart" style="max-height: 300px;"></canvas>
+                </div>
+
+                <div id="history-content"
+                    style="display:none; text-align: left; background: var(--card-bg, rgba(255,255,255,0.8)); padding: 25px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                    <!-- ข้อมูลประวัติจะแสดงที่นี่โดย Javascript -->
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Auto-load history when on history page if logged in -->
+    <script>
+        // We can call loadHistory automatically if the user is already logged in
+        document.addEventListener("DOMContentLoaded", function () {
+            // Delay slightly to ensure script.js variables and token are setup
+            setTimeout(() => {
+                const token = localStorage.getItem('token');
+                if (token) {
+                    loadHistory();
+                }
+            }, 500);
+        });
+    </script>
+
+    <script src="script.js"></script>
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+
+</body>
+
+</html>

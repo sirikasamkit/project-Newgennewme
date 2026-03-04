@@ -6,9 +6,16 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>New gen new me</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Prompt:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap"
+    rel="stylesheet">
   <link rel="stylesheet" href="main.css">
   <link rel="stylesheet" href="https://pyscript.net/releases/2024.1.1/core.css">
   <script type="module" src="https://pyscript.net/releases/2024.1.1/core.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 
 <body>
@@ -23,7 +30,13 @@
       <a href="about.html">About</a>
       <a href="services.html">Services</a>
       <a href="contact.html">Contact</a>
-      <button class="btnLogin-popup">Login</button>
+      <a href="history.html" id="nav-history-btn" style="display:none; color: #0ea5e9; font-weight: bold;">History</a>
+      <button id="theme-toggle" onclick="toggleTheme()" title="Toggle Dark Mode"></button>
+      <a href="admin.html" id="nav-admin-btn" style="display:none; color: #ffeb3b; font-weight: bold;">Admin Panel</a>
+      <button id="nav-login-btn" class="btnLogin-popup">Login</button>
+      <button id="nav-logout-btn" class="btn"
+        style="display:none; background: #e74c3c; border-color: #c0392b; color: white;"
+        onclick="logout()">Logout</button>
     </nav>
   </header>
 
@@ -86,59 +99,229 @@
   </div>
 
   <main class="content-wrapper">
-    <section class="info-card">
-      <h1>ยินดีต้อนรับสู่ <span class="newgen">NeWGen</span> <span class="newme">NewME</span></h1>
-      <p>เริ่มต้นดูแลสุขภาพของคุณด้วยการประเมินดัชนีมวลกาย (BMI) ที่แม่นยำและรวดเร็ว</p>
-    </section>
+    <!-- View สำหรับคนที่ยังไม่ได้ล็อกอิน (Guest) -->
+    <div id="guest-view">
+      <section class="info-card">
+        <h1>ยินดีต้อนรับสู่ <span class="newgen">NeWGen</span> <span class="newme">NewME</span></h1>
+        <p>เริ่มต้นดูแลสุขภาพของคุณด้วยการประเมินดัชนีมวลกาย (BMI) ที่แม่นยำและรวดเร็ว</p>
+        <p style="margin-top: 15px; color: #0ea5e9; font-weight: 600;">กรุณา <a href="#"
+            onclick="document.querySelector('.wrapper').classList.add('active-popup')"
+            style="color:#0ea5e9;">เข้าสู่ระบบ</a> เพื่อใช้งานฟีเจอร์อย่างเต็มรูปแบบ และจัดเก็บประวัติสุขภาพของคุณ</p>
+      </section>
+    </div>
 
-    <section class="info-card">
-      <h2 style="margin-bottom: 20px;">คำนวณค่า BMI ของคุณ</h2>
-      <div class="calculator-box">
-        <div class="input-group">
-          <label>น้ำหนัก (กก.):</label>
-          <input type="number" id="weight" placeholder="เช่น 65" min="1">
-        </div>
-        <div class="input-group">
-          <label>ส่วนสูง (ซม.):</label>
-          <input type="number" id="height" placeholder="เช่น 170" min="1">
-        </div>
-        <button onclick="calculateBMI()" class="btn">คำนวณผลลัพธ์</button>
-      </div>
+    <!-- View สำหรับคนที่ล็อกอินแล้ว (Dashboard) -->
+    <div id="dashboard-view" style="display: none;">
+      <section class="info-card">
+        <h1>สวัสดี <span id="display-username" class="newgen">User</span>! <span id="user-badges"></span>
+          ยินดีต้อนรับสู่แดชบอร์ด</h1>
 
-      <div id="result-area" style="display:none; margin-top: 30px; padding: 20px; border-top: 2px solid #162938;">
-        <h3>ค่า BMI ของคุณคือ: <span id="bmi-value" style="color: #162938; font-size: 1.5em;">0</span></h3>
-        <p style="font-size: 1.2rem;">อยู่ในเกณฑ์: <strong id="bmi-status">-</strong></p>
-      </div>
-    </section>
+        <!-- Daily Quote Box -->
+        <div id="daily-quote-container"
+          style="margin: 15px 0; padding: 15px; background: rgba(245, 158, 11, 0.1); border-left: 4px solid #f59e0b; border-radius: 8px; font-style: italic; color: #162938; display: none;">
+          <b style="color: #f59e0b;">💡 สาระประจำวัน:</b> <span id="daily-quote-text"></span>
+        </div>
+
+        <p>ตั้งค่าโปรไฟล์สุขภาพของคุณ เพื่อให้ AI แนะนำโภชนาการได้แม่นยำขึ้น</p>
+
+        <!-- Water Intake Tracker Widget -->
+        <div class="calculator-box"
+          style="margin-top: 20px; background: rgba(56, 189, 248, 0.1); border: 1px solid #38bdf8; text-align: center;">
+          <h3 style="margin-bottom: 10px; color: #0284c7;">💧 ดื่มน้ำวันนี้ (เป้าหมาย 8 แก้ว)</h3>
+          <div style="font-size: 2em; margin: 10px 0; color: #38bdf8; text-shadow: 0 2px 5px rgba(56,189,248,0.3);"
+            id="water-glasses">
+            <!-- JS will fill this with glasses -->
+          </div>
+          <button onclick="addWater()" class="btn"
+            style="width: auto; padding: 5px 20px; background: #38bdf8; color: white;">+ ดื่ม 1 แก้ว</button>
+          <button onclick="resetWater()" class="btn"
+            style="width: auto; padding: 5px 20px; background: #ef4444; color: white; margin-left: 10px;">เริ่มใหม่</button>
+        </div>
+
+        <!-- Mood & Sleep Wellness Section -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px;">
+          <!-- Mood Tracker -->
+          <div class="calculator-box"
+            style="margin: 0; background: rgba(168, 85, 247, 0.1); border: 1px solid #a855f7; text-align: center;">
+            <h3 style="margin-bottom: 10px; color: #9333ea;">🧠 วันนี้รู้สึกอย่างไร?</h3>
+            <div id="mood-options"
+              style="font-size: 1.5em; display: flex; justify-content: center; gap: 10px; margin-bottom: 10px;">
+              <span onclick="setMood('happy')" title="มีความสุข"
+                style="cursor:pointer; filter: grayscale(1); transition: 0.3s;" id="mood-happy">😊</span>
+              <span onclick="setMood('energetic')" title="พลังล้น"
+                style="cursor:pointer; filter: grayscale(1); transition: 0.3s;" id="mood-energetic">⚡</span>
+              <span onclick="setMood('tired')" title="เหนื่อย"
+                style="cursor:pointer; filter: grayscale(1); transition: 0.3s;" id="mood-tired">😴</span>
+              <span onclick="setMood('stressed')" title="เครียด"
+                style="cursor:pointer; filter: grayscale(1); transition: 0.3s;" id="mood-stressed">😟</span>
+            </div>
+            <p id="mood-status" style="font-size: 0.85em; color: #6b21a8;">เลือกอารมณ์ของคุณ</p>
+          </div>
+
+          <!-- Sleep Tracker -->
+          <div class="calculator-box"
+            style="margin: 0; background: rgba(79, 70, 229, 0.1); border: 1px solid #4f46e5; text-align: center;">
+            <h3 style="margin-bottom: 10px; color: #4338ca;">😴 นอนไปกี่ชั่วโมง?</h3>
+            <div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 10px;">
+              <input type="number" id="sleep-hours" value="8" min="0" max="24"
+                style="width: 60px; text-align: center; padding: 5px; border-radius: 5px; border: 1px solid #4f46e5;">
+              <span style="color: #4f46e5; font-weight: bold;">ชม.</span>
+            </div>
+            <button onclick="saveSleep()" class="btn"
+              style="width: auto; padding: 5px 15px; background: #4f46e5; color: white; font-size: 0.9em;">บันทึกการนอน</button>
+          </div>
+        </div>
+
+        <!-- Goal Progress Widget -->
+        <div id="share-card" class="calculator-box"
+          style="margin-top: 20px; background: rgba(14, 165, 233, 0.1); border: 1px solid #0ea5e9;">
+          <h3 style="margin-bottom: 10px; text-align: left; color: #162938;">เป้าหมายของคุณ 🎯</h3>
+          <div id="goal-progress-container" style="display:none; text-align: left;">
+            <p id="goal-status-text" style="font-weight: bold; font-size: 1.1em;"></p>
+            <small style="display:block; margin-top: 10px; color: #555;">น้ำหนักปัจจุบัน: <span
+                id="display-current-weight" style="font-weight:bold;"></span> กก. | เป้าหมาย: <span
+                id="display-goal-weight" style="font-weight:bold;"></span> กก.</small>
+          </div>
+          <p id="no-goal-text" style="color: #888; text-align: left;">
+            กรุณาตั้งค่าน้ำหนักปัจจุบันและเป้าหมายในโปรไฟล์ด้านล่าง</p>
+
+          <!-- Mini Chart -->
+          <div id="mini-chart-container" style="display: none; margin-top: 20px;">
+            <hr style="border-top: 1px dashed rgba(14, 165, 233, 0.3); margin-bottom: 15px;">
+            <p style="font-size: 0.9em; font-weight: 600; margin-bottom: 10px; color: #162938;">📈 แนวโน้มน้ำหนักล่าสุด
+            </p>
+            <div style="height: 150px; width: 100%;">
+              <canvas id="miniHistoryChart"></canvas>
+            </div>
+          </div>
+
+          <!-- Share Button -->
+          <div style="margin-top: 30px; text-align: center;">
+            <button onclick="shareProgress()" class="btn"
+              style="width: auto; padding: 10px 20px; background: linear-gradient(90deg, #f43f5e, #e11d48);"><ion-icon
+                name="share-social-outline" style="vertical-align: middle; margin-right: 5px;"></ion-icon>
+              บันทึกภาพแชร์ความสำเร็จ</button>
+          </div>
+        </div>
+
+        <div class="calculator-box" style="margin-top: 20px;">
+          <h3 style="margin-bottom: 15px; text-align: left;">ข้อมูลโปรไฟล์ของคุณ</h3>
+          <div class="input-group">
+            <label>อายุ (ปี):</label>
+            <input type="number" id="profile-age" placeholder="เช่น 25">
+          </div>
+          <div class="input-group">
+            <label>เพศ:</label>
+            <select id="profile-gender" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc;">
+              <option value="">เลือกเพศ...</option>
+              <option value="male">ชาย</option>
+              <option value="female">หญิง</option>
+            </select>
+          </div>
+          <div class="input-group">
+            <label>ส่วนสูงปัจจุบัน (ซม.):</label>
+            <input type="number" id="profile-height" placeholder="เช่น 170">
+          </div>
+          <div class="input-group">
+            <label>น้ำหนักปัจจุบัน (กก.):</label>
+            <input type="number" id="profile-weight" placeholder="เช่น 65">
+          </div>
+          <div class="input-group">
+            <label>น้ำหนักเป้าหมาย (กก.):</label>
+            <input type="number" id="profile-goal" placeholder="เช่น 60">
+          </div>
+          <div class="input-group">
+            <label>รูปแบบการฝึก (เป้าหมาย):</label>
+            <select id="profile-activity" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc;">
+              <option value="general">ทั่วไป (ลด/ควบคุมน้ำหนัก)</option>
+              <option value="bodybuilder">💪 สร้างกล้ามเนื้อ (Bodybuilder)</option>
+            </select>
+          </div>
+          <button onclick="saveProfile()" class="btn">บันทึกโปรไฟล์</button>
+        </div>
+      </section>
+
+      <section class="info-card">
+        <h2 style="margin-bottom: 20px;">คำนวณ BMI & รับแผนสุขภาพ (AI)</h2>
+        <p style="text-align: left; margin-bottom: 15px;">ระบบจะใช้ข้อมูลจากโปรไฟล์เพื่อคำนวณและประมวลผลทันที!</p>
+        <div class="calculator-box">
+          <button onclick="calculateBMIFromProfile()" class="btn">คำนวณแผนด้วย AI</button>
+        </div>
+
+        <div id="result-area" style="display:none; margin-top: 30px; padding: 20px; border-top: 2px solid #162938;">
+          <h3><span id="bmi-label-text">ค่า BMI ของคุณคือ:</span> <span id="bmi-value"
+              style="color: #0ea5e9; font-size: 1.5em;">0</span></h3>
+          <p style="font-size: 1.2rem;">อยู่ในเกณฑ์: <strong id="bmi-status">-</strong></p>
+        </div>
+      </section>
+
+      <section class="info-card">
+        <h2 style="margin-bottom: 20px;">วิเคราะห์แคลอรี่จากรูปอาหาร (AI Scan)</h2>
+        <div class="calculator-box">
+          <div class="input-group" style="display: flex; gap: 10px; margin-bottom: 20px;">
+            <!-- File Upload Option -->
+            <div style="flex: 1;">
+              <label>อัปโหลดรูปภาพอาหาร:</label>
+              <input type="file" id="food-image" accept="image/*" onchange="previewImage(event)">
+            </div>
+            <!-- Camera Option -->
+            <div style="flex: 1; align-items: flex-end; display: flex;">
+              <button onclick="startCamera()" class="btn" style="background: #0ea5e9; color: white;"
+                id="btn-start-camera">
+                <ion-icon name="camera" style="vertical-align: middle; margin-right: 5px;"></ion-icon> เปิดกล้อง
+              </button>
+            </div>
+          </div>
+
+          <!-- Camera Stream Container -->
+          <div id="camera-container"
+            style="display:none; margin-bottom: 20px; text-align: center; border: 2px dashed #0ea5e9; padding: 10px; border-radius: 10px; position: relative;">
+            <video id="camera-stream" autoplay playsinline
+              style="width: 100%; max-width: 400px; border-radius: 8px; transform: scaleX(-1);"></video>
+            <canvas id="camera-canvas" style="display: none;"></canvas>
+            <div style="margin-top: 15px; display: flex; gap: 10px; justify-content: center;">
+              <button onclick="captureImage()" class="btn" style="width: 120px; background: #10b981;">ถ่ายภาพ
+                📸</button>
+              <button onclick="stopCamera()" class="btn" style="width: 120px; background: #ef4444;">ปิดกล้อง ❌</button>
+            </div>
+          </div>
+
+          <div id="image-preview-container" style="display:none; margin-bottom: 20px; text-align: center;">
+            <img id="preview-img" src="#" alt="Food Preview"
+              style="max-width: 100%; max-height: 300px; border-radius: 10px; margin-top: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.2);">
+          </div>
+
+          <button onclick="analyzeFoodImage()" class="btn" id="btn-analyze-food"
+            style="display: none;">สแกนแคลอรี่</button>
+        </div>
+
+        <div id="food-result-area"
+          style="display:none; margin-top: 30px; padding: 20px; border-top: 2px solid #162938; text-align: left;">
+          <h3 style="color: #162938; margin-bottom: 20px;">ผลการวิเคราะห์:</h3>
+
+          <div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start;">
+            <!-- Text Content -->
+            <div id="food-analysis-content" style="line-height: 1.6; color: #333; flex: 1; min-width: 300px;"></div>
+
+            <!-- Macro Donut Chart Container -->
+            <div id="macro-chart-container" style="display: none; width: 250px; height: 250px; margin: 0 auto;">
+              <canvas id="foodMacroChart"></canvas>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ประวัติการใช้งาน -->
+      <section class="info-card" id="history-section">
+        <h2 style="margin-bottom: 20px;">ประวัติของคุณ (History)</h2>
+        <div class="calculator-box">
+          <p style="margin-bottom: 15px; text-align: left;">
+            คุณสามารถดูประวัติการคำนวณและสแกนอาหารทั้งหมดได้ที่หน้าประวัติโดยเฉพาะ</p>
+          <button onclick="window.location.href='history.html'" class="btn">ดูประวัติแบบเต็ม</button>
+        </div>
+      </section>
+    </div>
   </main>
-
-  <div id="result-area" style="display:none; margin-top: 30px; padding: 20px; border-top: 2px solid #162938;">
-    <h3>ค่า BMI ของคุณคือ: <span id="bmi-value">0</span></h3>
-    <p>อยู่ในเกณฑ์: <strong id="bmi-status">-</strong></p>
-  </div>
-
-  <section class="info-card">
-    <h2 style="margin-bottom: 20px;">วิเคราะห์แคลอรี่จากรูปอาหาร (AI Scan)</h2>
-    <div class="calculator-box">
-      <div class="input-group">
-        <label>เลือกรูปภาพอาหารของคุณ:</label>
-        <input type="file" id="food-image" accept="image/*" onchange="previewImage(event)">
-      </div>
-
-      <div id="image-preview-container" style="display:none; margin-bottom: 20px; text-align: center;">
-        <img id="preview-img" src="#" alt="Food Preview"
-          style="max-width: 100%; border-radius: 10px; margin-top: 10px;">
-      </div>
-
-      <button onclick="analyzeFoodImage()" class="btn">สแกนแคลอรี่</button>
-    </div>
-
-    <div id="food-result-area"
-      style="display:none; margin-top: 30px; padding: 20px; border-top: 2px solid #162938; text-align: left;">
-      <h3 style="color: #162938;">ผลการวิเคราะห์:</h3>
-      <div id="food-analysis-content" style="line-height: 1.6; color: #333;"></div>
-    </div>
-  </section>
 
   <script sret="/Backend/server.js"></script>
   <script src="script.js"></script>
