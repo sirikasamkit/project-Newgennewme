@@ -110,6 +110,8 @@ function checkLoginStatus() {
         if (typeof renderWaterTracker === 'function') renderWaterTracker();
         if (typeof initWellnessSection === 'function') initWellnessSection();
         if (typeof checkAndAssignBadges === 'function') checkAndAssignBadges(token);
+        if (typeof updateStreak === 'function') updateStreak();
+        if (typeof renderWeeklySnapshots === 'function') renderWeeklySnapshots();
     } else {
         if (guestView) guestView.style.display = 'block';
         if (dashboardView) dashboardView.style.display = 'none';
@@ -135,6 +137,13 @@ window.onload = () => {
 
     // 2. โหลดสถานะล็อคอิน
     checkLoginStatus();
+
+    // 3. Register Service Worker for PWA
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('service-worker.js')
+            .then(reg => console.log('Service Worker Registered!', reg))
+            .catch(err => console.log('Service Worker registration failed: ', err));
+    }
 };
 
 async function loadProfile() {
@@ -1047,17 +1056,171 @@ window.initWellnessSection = function () {
     if (savedSleep) document.getElementById('sleep-hours').value = savedSleep;
 }
 
-// Premium Sound Helper
-window.playPremiumSound = function (type) {
-    const sounds = {
-        pop: 'https://assets.mixkit.co/active_storage/sfx/2571/2571-preview.mp3',
-        confirm: 'https://assets.mixkit.co/active_storage/sfx/2568/2568-preview.mp3',
-        badge: 'https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3'
-    };
+// ===================================
+// Premium Features: Streaks, Snapshots, Chat
+// ===================================
 
-    if (sounds[type]) {
-        const audio = new Audio(sounds[type]);
-        audio.volume = 0.2;
-        audio.play().catch(e => { }); // Ignore autoplay blocks
+function updateStreak() {
+    const lastLoginDate = localStorage.getItem('last_login_date');
+    const today = new Date().toLocaleDateString('en-CA');
+    let streak = parseInt(localStorage.getItem('user_streak')) || 0;
+
+    if (lastLoginDate === today) {
+        // Already logged in today, do nothing
+    } else {
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yesterdayStr = yesterday.toLocaleDateString('en-CA');
+
+        if (lastLoginDate === yesterdayStr) {
+            streak++;
+        } else {
+            streak = 1;
+        }
+        localStorage.setItem('user_streak', streak);
+        localStorage.setItem('last_login_date', today);
+    }
+
+    const streakBadge = document.getElementById('streak-badge');
+    const streakCount = document.getElementById('streak-count');
+    if (streakBadge && streakCount) {
+        streakCount.innerText = streak;
+        streakBadge.style.display = streak > 0 ? 'inline-block' : 'none';
+        if (streak >= 3) streakBadge.style.background = 'rgba(255, 69, 0, 0.2)';
     }
 }
+
+let weeklyWaterChartInstance = null;
+let weeklySleepChartInstance = null;
+
+function renderWeeklySnapshots() {
+    const waterCtx = document.getElementById('weeklyWaterChart');
+    const sleepCtx = document.getElementById('weeklySleepChart');
+    if (!waterCtx || !sleepCtx) return;
+
+    // Mocking 7 days data for demonstration 
+    // In production, this would come from the /api/history or extra local storage keys
+    const days = ['จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.', 'อา.'];
+    const waterData = [6, 8, 5, 7, 8, 4, 6];
+    const sleepData = [7, 6.5, 8, 7, 6, 9, 8.5];
+
+    if (weeklyWaterChartInstance) weeklyWaterChartInstance.destroy();
+    if (weeklySleepChartInstance) weeklySleepChartInstance.destroy();
+
+    const isDark = document.body.classList.contains('dark-mode');
+    const color = isDark ? '#94a3b8' : '#64748b';
+
+    weeklyWaterChartInstance = new Chart(waterCtx, {
+        type: 'bar',
+        data: {
+            labels: days,
+            datasets: [{
+                label: 'แก้ว',
+                data: waterData,
+                backgroundColor: '#38bdf8',
+                borderRadius: 5
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { ticks: { color: color, font: { size: 10 } }, grid: { display: false } },
+                y: { ticks: { color: color, font: { size: 10 } }, beginAtZero: true }
+            }
+        }
+    });
+
+    weeklySleepChartInstance = new Chart(sleepCtx, {
+        type: 'line',
+        data: {
+            labels: days,
+            datasets: [{
+                label: 'ชม.',
+                data: sleepData,
+                borderColor: '#4f46e5',
+                tension: 0.4,
+                fill: false,
+                borderWidth: 2,
+                pointRadius: 3
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+                x: { ticks: { color: color, font: { size: 10 } }, grid: { display: false } },
+                y: { ticks: { color: color, font: { size: 10 } }, beginAtZero: true }
+            }
+        }
+    });
+}
+
+// AI Chat Logic
+window.toggleChat = function () {
+    const win = document.getElementById('chat-window');
+    if (win.style.display === 'none' || win.style.display === '') {
+        win.style.display = 'flex';
+        playPremiumSound('pop');
+    } else {
+        win.style.display = 'none';
+    }
+}
+
+window.sendChatMessage = async function () {
+    const input = document.getElementById('chat-input');
+    const msgContainer = document.getElementById('chat-messages');
+    const text = input.value.trim();
+    if (!text) return;
+
+    // Add user message
+    msgContainer.innerHTML += `
+        <div style="background: #0ea5e9; color: white; padding: 10px; border-radius: 10px 10px 0 10px; margin-bottom: 10px; max-width: 80%; align-self: flex-end; margin-left: auto;">
+            ${text}
+        </div>
+    `;
+    input.value = '';
+    msgContainer.scrollTop = msgContainer.scrollHeight;
+
+    // Thinking indicator
+    const thinkingId = 'ai-thinking-' + Date.now();
+    msgContainer.innerHTML += `
+        <div id="${thinkingId}" style="background: #e2e8f0; padding: 10px; border-radius: 10px 10px 10px 0; margin-bottom: 10px; max-width: 80%;">
+            AI กำลังพิมพ์...
+        </div>
+    `;
+    msgContainer.scrollTop = msgContainer.scrollHeight;
+
+    try {
+        const response = await fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: text })
+        });
+        const data = await response.json();
+
+        document.getElementById(thinkingId).remove();
+
+        msgContainer.innerHTML += `
+            <div style="background: #e2e8f0; padding: 10px; border-radius: 10px 10px 10px 0; margin-bottom: 10px; max-width: 80%;">
+                ${formatAiText(data.reply)}
+            </div>
+        `;
+        msgContainer.scrollTop = msgContainer.scrollHeight;
+        playPremiumSound('confirm');
+    } catch (e) {
+        document.getElementById(thinkingId).innerText = "ขออภัยครับ เกิดข้อผิดพลาดในการเชื่อมต่อ";
+    }
+}
+
+// Listen for Enter key in chat input
+document.addEventListener('DOMContentLoaded', () => {
+    const chatInput = document.getElementById('chat-input');
+    if (chatInput) {
+        chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendChatMessage();
+        });
+    }
+});

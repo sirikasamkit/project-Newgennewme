@@ -129,6 +129,32 @@ app.post('/api/analyze-food', upload.single('image'), async (req, res) => {
     }
 });
 
+app.post('/api/chat', async (req, res) => {
+    try {
+        const { message } = req.body;
+        const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
+
+        const prompt = `คุณคือ NeWGen AI ผู้ช่วยอัจฉริยะด้านสุขภาพและความงาม (Wellness Assistant)
+        หน้าที่ของคุณคือตอบคำถามเกี่ยวกับสุขภาพ การออกกำลังกาย โภชนาการ และการดูแลตัวเอง 
+        คำถามจากผู้ใช้: "${message}"
+        
+        คำแนะนำ:
+        - ตอบอย่างเป็นกันเองและเป็นบวก
+        - ถ้าผู้ใช้ถามเรื่องโภชนาการ ให้เน้นความสมดุล
+        - ถ้าเป็นคำถามทางการแพทย์ที่ร้ายแรง ให้แนะนำให้ปรึกษาแพทย์
+        - พยายามใช้ Bullet point เพื่อให้อ่านง่าย
+        - ใช้ภาษาไทยที่ดูพรีเมียมและสุภาพ`;
+
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        res.json({ reply: response.text() });
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "AI Assistant is resting right now." });
+    }
+});
+
 app.listen(5000, '0.0.0.0', () => {
     console.log("✅ Server running on http://localhost:5000");
 

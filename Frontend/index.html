@@ -16,6 +16,11 @@
   <script type="module" src="https://pyscript.net/releases/2024.1.1/core.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#0ea5e9">
+  <link rel="apple-touch-icon" href="img/icon-192.png">
 </head>
 
 <body>
@@ -113,8 +118,13 @@
     <!-- View สำหรับคนที่ล็อกอินแล้ว (Dashboard) -->
     <div id="dashboard-view" style="display: none;">
       <section class="info-card">
-        <h1>สวัสดี <span id="display-username" class="newgen">User</span>! <span id="user-badges"></span>
-          ยินดีต้อนรับสู่แดชบอร์ด</h1>
+        <h1>สวัสดี <span id="display-username" class="newgen">User</span>!
+          <span id="user-badges"></span>
+          <span id="streak-badge"
+            style="display:none; margin-left:10px; font-size: 0.8em; background: rgba(255, 69, 0, 0.1); padding: 2px 8px; border-radius: 20px; color: #ff4500; border: 1px solid #ff4500;">🔥
+            <span id="streak-count">0</span> วัน</span>
+          ยินดีต้อนรับสู่แดชบอร์ด
+        </h1>
 
         <!-- Daily Quote Box -->
         <div id="daily-quote-container"
@@ -201,6 +211,29 @@
               style="width: auto; padding: 10px 20px; background: linear-gradient(90deg, #f43f5e, #e11d48);"><ion-icon
                 name="share-social-outline" style="vertical-align: middle; margin-right: 5px;"></ion-icon>
               บันทึกภาพแชร์ความสำเร็จ</button>
+          </div>
+        </div>
+
+        <!-- Weekly Health Snapshot (Premium Feature) -->
+        <div class="calculator-box"
+          style="margin-top: 20px; background: rgba(16, 185, 129, 0.05); border: 1px solid #10b981;">
+          <h3 style="margin-bottom: 15px; color: #059669; display: flex; align-items: center; gap: 10px;">
+            <ion-icon name="stats-chart-outline"></ion-icon> Weekly Health Snapshot
+          </h3>
+          <p style="font-size: 0.85em; color: #374151; margin-bottom: 15px;">สรุปแนวโน้มสุขภาพของคุณในรอบ 7 วันที่ผ่านมา
+          </p>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+            <div style="height: 180px; background: rgba(255,255,255,0.4); border-radius: 12px; padding: 10px;">
+              <p style="font-size: 0.75em; font-weight: bold; color: #4b5563; text-align: center; margin-bottom: 5px;">
+                💧 การดื่มน้ำ (แก้ว)</p>
+              <canvas id="weeklyWaterChart"></canvas>
+            </div>
+            <div style="height: 180px; background: rgba(255,255,255,0.4); border-radius: 12px; padding: 10px;">
+              <p style="font-size: 0.75em; font-weight: bold; color: #4b5563; text-align: center; margin-bottom: 5px;">
+                😴 การนอนหลับ (ชม.)</p>
+              <canvas id="weeklySleepChart"></canvas>
+            </div>
           </div>
         </div>
 
@@ -325,6 +358,35 @@
 
   <script sret="/Backend/server.js"></script>
   <script src="script.js"></script>
+  <!-- AI Wellness Chatbot Widget -->
+  <div id="ai-chat-widget" style="position: fixed; bottom: 20px; right: 20px; z-index: 1000;">
+    <button onclick="toggleChat()" id="chat-toggle-btn"
+      style="width: 60px; height: 60px; border-radius: 50%; background: #0ea5e9; color: white; border: none; box-shadow: 0 4px 15px rgba(14, 165, 233, 0.4); cursor: pointer; font-size: 30px; display: flex; align-items: center; justify-content: center;">
+      <ion-icon name="chatbubbles-outline"></ion-icon>
+    </button>
+    <div id="chat-window"
+      style="display: none; position: absolute; bottom: 80px; right: 0; width: 350px; height: 500px; background: white; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); flex-direction: column; overflow: hidden; border: 1px solid #e2e8f0;">
+      <div
+        style="background: #0ea5e9; color: white; padding: 15px; font-weight: bold; display: flex; justify-content: space-between; align-items: center;">
+        <span>🤖 AI Wellness Assistant</span>
+        <ion-icon name="close-outline" onclick="toggleChat()" style="cursor: pointer; font-size: 24px;"></ion-icon>
+      </div>
+      <div id="chat-messages" style="flex: 1; padding: 15px; overflow-y: auto; background: #f8fafc; font-size: 0.9em;">
+        <div
+          style="background: #e2e8f0; padding: 10px; border-radius: 10px 10px 10px 0; margin-bottom: 10px; max-width: 80%;">
+          สวัสดีครับ! ผม NeWGen AI ยินดีที่ได้รู้จัก มีอะไรให้ผมช่วยแนะนำด้านสุขภาพไหมครับ?
+        </div>
+      </div>
+      <div style="padding: 15px; border-top: 1px solid #e2e8f0; display: flex; gap: 10px; background: white;">
+        <input type="text" id="chat-input" placeholder="พิมพ์คำถามที่นี่..."
+          style="flex: 1; padding: 8px 12px; border-radius: 20px; border: 1px solid #cbd5e1; outline: none;">
+        <button onclick="sendChatMessage()"
+          style="background: #0ea5e9; color: white; border: none; border-radius: 50%; width: 35px; height: 35px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+          <ion-icon name="send"></ion-icon>
+        </button>
+      </div>
+    </div>
+  </div>
   <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
   <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
 </body>
