@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile - NewGen NewME</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Prompt:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="main.css">
+    <link rel="stylesheet" href="https://pyscript.net/releases/2024.1.1/core.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+
+    <header>
+        <h2 class="Logo">
+            <span class="newgen">NeWGen</span>
+            <span class="newme">NewME</span>
+        </h2>
+        <nav class="navigation">
+            <a href="index.html">Home</a>
+            <a href="about.html">About</a>
+            <a href="services.html">Services</a>
+            <a href="contact.html">Contact</a>
+            <a href="profile.html" id="nav-profile-btn"
+                style="display:none; color: #10b981; font-weight: bold;">Profile</a>
+            <a href="history.html" id="nav-history-btn"
+                style="display:none; color: #0ea5e9; font-weight: bold;">History</a>
+            <button id="theme-toggle" onclick="toggleTheme()" title="Toggle Dark Mode"></button>
+            <a href="admin.html" id="nav-admin-btn" style="display:none; color: #ffeb3b; font-weight: bold;">Admin
+                Panel</a>
+            <button id="nav-login-btn" class="btnLogin-popup">Login</button>
+            <button id="nav-logout-btn" class="btn"
+                style="display:none; background: #e74c3c; border-color: #c0392b; color: white;"
+                onclick="logout()">Logout</button>
+        </nav>
+    </header>
+
+    <div class="content-wrapper" style="margin-top: 100px;">
+        <h1 style="color: #10b981; margin-bottom: 30px;"><ion-icon name="person-circle-outline"
+                style="vertical-align: middle;"></ion-icon> โปรไฟล์ของคุณ</h1>
+
+        <div class="calculator-box"
+            style="margin-top: 20px; max-width: 600px; margin-left: auto; margin-right: auto; text-align: center;">
+
+            <!-- Profile Picture Section -->
+            <div class="profile-pic-container" style="margin-bottom: 25px;">
+                <div style="position: relative; display: inline-block;">
+                    <img id="profile-preview" src="https://via.placeholder.com/150" alt="Profile"
+                        style="width: 150px; height: 150px; border-radius: 50%; object-fit: cover; border: 4px solid #10b981; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                    <label for="profile-upload"
+                        style="position: absolute; bottom: 5px; right: 5px; background: #10b981; color: white; width: 35px; height: 35px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.2);">
+                        <ion-icon name="camera-outline" style="font-size: 20px;"></ion-icon>
+                    </label>
+                    <input type="file" id="profile-upload" accept="image/*" style="display: none;"
+                        onchange="previewImage(event)">
+                </div>
+                <p style="font-size: 0.9em; color: #64748b; margin-top: 10px;">คลิกเพื่ออัปโหลดรูปโปรไฟล์</p>
+            </div>
+
+            <div class="input-group">
+                <label>ชื่อผู้ใช้งาน (Display Name):</label>
+                <input type="text" id="profile-username" placeholder="กรอกชื่อของคุณ">
+            </div>
+            <div class="input-group">
+                <label>อายุ (ปี):</label>
+                <input type="number" id="profile-age" placeholder="เช่น 25">
+            </div>
+            <div class="input-group">
+                <label>เพศ:</label>
+                <select id="profile-gender" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc;">
+                    <option value="">เลือกเพศ...</option>
+                    <option value="male">ชาย</option>
+                    <option value="female">หญิง</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <label>ส่วนสูงปัจจุบัน (ซม.):</label>
+                <input type="number" id="profile-height" placeholder="เช่น 170">
+            </div>
+            <div class="input-group">
+                <label>น้ำหนักปัจจุบัน (กก.):</label>
+                <input type="number" id="profile-weight" placeholder="เช่น 65">
+            </div>
+            <div class="input-group">
+                <label>น้ำหนักเป้าหมาย (กก.):</label>
+                <input type="number" id="profile-goal" placeholder="เช่น 60">
+            </div>
+            <div class="input-group">
+                <label>รูปแบบการฝึก (เป้าหมาย):</label>
+                <select id="profile-activity"
+                    style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc;">
+                    <option value="general">ทั่วไป (ลด/ควบคุมน้ำหนัก)</option>
+                    <option value="bodybuilder">💪 สร้างกล้ามเนื้อ (Bodybuilder)</option>
+                </select>
+            </div>
+            <button onclick="saveProfile()" class="btn"
+                style="width: 100%; font-size: 1.1em; background: linear-gradient(90deg, #10b981, #059669); margin-top: 10px;">💾
+                บันทึกการเปลี่ยนแปลง</button>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+
+    <script src="ui.js" defer></script>
+    <script src="auth.js" defer></script>
+    <script src="api.js" defer></script>
+    <script src="ai.js" defer></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (window.loadProfile) window.loadProfile();
+        });
+
+        function previewImage(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function (e) {
+                    document.getElementById('profile-preview').src = e.target.result;
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+    </script>
+</body>
+
+</html>

@@ -1,5 +1,5 @@
 :root {
-    /* Light Mode Colors remains similar */
+    /* Light Mode Colors */
     --bg-gradient-1: #e0f2fe;
     --bg-gradient-2: #f0fdf4;
     --bg-gradient-3: #fdf4ff;
@@ -78,7 +78,6 @@
     padding: 0;
     box-sizing: border-box;
     font-family: 'Prompt', 'Inter', sans-serif;
-    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 html {
@@ -91,8 +90,7 @@ body {
     align-items: center;
     min-height: 100vh;
     background: linear-gradient(-45deg, var(--bg-gradient-1), var(--bg-gradient-2), var(--bg-gradient-3), var(--bg-gradient-4));
-    background-size: 400% 400%;
-    animation: gradientBG 15s ease infinite;
+    background-size: 100% 100%;
     color: var(--text-main);
     overflow-x: hidden;
 }
@@ -1026,6 +1024,46 @@ header {
 }
 
 /* =========================================
+   Responsive Premium Grids
+   ========================================= */
+.premium-grid {
+    display: grid;
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.premium-grid>* {
+    min-width: 0;
+    /* Prevents flex/grid children from overflowing (specifically for Chart.js) */
+}
+
+.premium-grid-cols-2 {
+    grid-template-columns: 1fr 1fr;
+}
+
+
+/* =========================================
+   Tablet Responsiveness (769px - 1024px)
+   ========================================= */
+@media (min-width: 769px) and (max-width: 1024px) {
+    header {
+        padding: 15px 40px;
+    }
+
+    .content-wrapper {
+        padding: 100px 30px 40px;
+    }
+
+    .info-card {
+        padding: 40px;
+    }
+
+    .premium-grid {
+        gap: 10px;
+    }
+}
+
+/* =========================================
    Mobile Responsiveness
    ========================================= */
 @media (max-width: 768px) {
@@ -1076,6 +1114,10 @@ header {
         padding: 30px 20px;
     }
 
+    .premium-grid-cols-2 {
+        grid-template-columns: 1fr;
+    }
+
     .services-grid,
     .admin-grid {
         grid-template-columns: 1fr;
@@ -1105,19 +1147,7 @@ header {
     }
 }
 
-body::before {
-    content: "";
-    position: fixed;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    background: radial-gradient(circle, rgba(14, 165, 233, 0.05) 0%, transparent 40%),
-        radial-gradient(circle, rgba(168, 85, 247, 0.05) 0%, transparent 40%);
-    z-index: -1;
-    animation: blob 20s infinite alternate;
-    pointer-events: none;
-}
+/* body::before blobs removed to prevent dizziness */
 
 /* Glide up for sections */
 .info-card,
@@ -1146,4 +1176,183 @@ body::before {
 
 .dark-mode .mood-emoji-active {
     text-shadow: 0 0 15px rgba(168, 85, 247, 0.8);
+}
+
+/* =================================== */
+/* AI Wellness Chatbot Widget Styles   */
+/* =================================== */
+
+.ai-chat-widget {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1000;
+}
+
+.chat-toggle-btn {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: var(--btn-bg-1);
+    color: var(--btn-text);
+    border: none;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+    font-size: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
+}
+
+.chat-toggle-btn:hover {
+    transform: scale(1.1);
+    box-shadow: var(--btn-glow), 0 8px 20px rgba(0, 0, 0, 0.3);
+    background: var(--btn-hover-1);
+}
+
+.chat-window {
+    position: absolute;
+    bottom: 80px;
+    right: 0;
+    width: 350px;
+    height: 500px;
+    background: var(--card-bg);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 15px;
+    box-shadow: 0 10px 30px var(--card-shadow);
+    flex-direction: column;
+    overflow: hidden;
+    border: 1px solid var(--card-border);
+    animation: glideUp 0.3s ease-out forwards;
+}
+
+.chat-header {
+    background: linear-gradient(90deg, var(--btn-bg-1), var(--btn-bg-2));
+    color: var(--btn-text);
+    padding: 15px;
+    font-weight: bold;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--card-border);
+}
+
+.chat-header ion-icon {
+    cursor: pointer;
+    font-size: 24px;
+    transition: transform 0.3s ease;
+}
+
+.chat-header ion-icon:hover {
+    transform: rotate(90deg) scale(1.1);
+}
+
+.chat-messages {
+    flex: 1;
+    padding: 15px;
+    overflow-y: auto;
+    background: transparent;
+    font-size: 0.95em;
+    display: flex;
+    flex-direction: column;
+}
+
+.chat-msg {
+    padding: 12px 16px;
+    border-radius: 15px;
+    margin-bottom: 12px;
+    max-width: 85%;
+    line-height: 1.5;
+    word-break: break-word;
+    box-shadow: 0 2px 8px var(--card-shadow);
+    animation: glideUp 0.3s ease-out forwards;
+}
+
+.chat-msg.ai-msg {
+    background: var(--support-bg);
+    color: var(--text-main);
+    border-radius: 15px 15px 15px 0;
+    align-self: flex-start;
+    border: 1px solid var(--card-border);
+}
+
+.chat-msg.user-msg {
+    background: linear-gradient(135deg, var(--btn-bg-1), var(--btn-bg-2));
+    color: var(--btn-text);
+    border-radius: 15px 15px 0 15px;
+    align-self: flex-end;
+    margin-left: auto;
+}
+
+.chat-input-area {
+    padding: 15px;
+    border-top: 1px solid var(--divider);
+    display: flex;
+    gap: 10px;
+    background: var(--card-bg);
+}
+
+.chat-input-area input {
+    flex: 1;
+    padding: 10px 15px;
+    border-radius: 20px;
+    border: 1px solid var(--input-border);
+    outline: none;
+    background: var(--input-bg);
+    color: var(--text-accent);
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.chat-input-area input:focus {
+    border-color: var(--btn-hover-1);
+    box-shadow: 0 0 8px rgba(14, 165, 233, 0.3);
+}
+
+.chat-send-btn {
+    background: linear-gradient(90deg, var(--btn-bg-1), var(--btn-bg-2));
+    color: var(--btn-text);
+    border: none;
+    border-radius: 50%;
+    width: 42px;
+    height: 42px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.chat-send-btn:hover {
+    transform: scale(1.1) translateY(-2px);
+    box-shadow: var(--btn-glow);
+}
+
+/* =================================== */
+/* Mobile Responsiveness for Chatbot   */
+/* =================================== */
+
+@media (max-width: 768px) {
+    .ai-chat-widget {
+        bottom: 15px;
+        right: 15px;
+    }
+
+    .chat-window {
+        position: fixed;
+        width: calc(100vw - 30px);
+        height: 60vh;
+        max-height: 500px;
+        bottom: 85px;
+        right: 15px;
+        z-index: 1001;
+    }
+
+    .chat-toggle-btn {
+        width: 55px;
+        height: 55px;
+        font-size: 26px;
+    }
 }

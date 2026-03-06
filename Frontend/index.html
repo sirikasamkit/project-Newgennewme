@@ -35,12 +35,18 @@
       <a href="about.html">About</a>
       <a href="services.html">Services</a>
       <a href="contact.html">Contact</a>
+      <a href="profile.html" id="nav-profile-btn"
+        style="display:none; align-items: center; gap: 8px; color: #10b981; font-weight: bold; text-decoration: none;">
+        <img id="nav-profile-pic" src="https://via.placeholder.com/30"
+          style="width: 30px; height: 30px; border-radius: 50%; object-fit: cover; border: 1px solid #10b981;">
+        Profile
+      </a>
       <a href="history.html" id="nav-history-btn" style="display:none; color: #0ea5e9; font-weight: bold;">History</a>
       <button id="theme-toggle" onclick="toggleTheme()" title="Toggle Dark Mode"></button>
       <a href="admin.html" id="nav-admin-btn" style="display:none; color: #ffeb3b; font-weight: bold;">Admin Panel</a>
       <button id="nav-login-btn" class="btnLogin-popup">Login</button>
       <button id="nav-logout-btn" class="btn"
-        style="display:none; background: #e74c3c; border-color: #c0392b; color: white;"
+        style="display:none; background: #e74c3c; border-color: #c0392b; color: white; margin-left: 20px;"
         onclick="logout()">Logout</button>
     </nav>
   </header>
@@ -65,7 +71,7 @@
         </div>
         <div class="remember-forgot">
           <label><input type="checkbox"> remember me</label>
-          <a href="#">Forgot Password?</a>
+          <a href="#" onclick="forgotPassword(event)">Forgot Password?</a>
         </div>
         <button type="submit" id="login-btn" class="btn">Login</button>
         <div class="login-register">
@@ -117,13 +123,16 @@
 
     <!-- View สำหรับคนที่ล็อกอินแล้ว (Dashboard) -->
     <div id="dashboard-view" style="display: none;">
-      <section class="info-card">
+      <section class="info-card" style="text-align: center;">
+        <img id="dashboard-profile-pic" src="https://via.placeholder.com/100"
+          style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 3px solid #10b981; margin: 0 auto 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); display: none;">
         <h1>สวัสดี <span id="display-username" class="newgen">User</span>!
           <span id="user-badges"></span>
           <span id="streak-badge"
             style="display:none; margin-left:10px; font-size: 0.8em; background: rgba(255, 69, 0, 0.1); padding: 2px 8px; border-radius: 20px; color: #ff4500; border: 1px solid #ff4500;">🔥
             <span id="streak-count">0</span> วัน</span>
-          ยินดีต้อนรับสู่แดชบอร์ด
+          <br><span
+            style="font-size: 0.7em; font-weight: normal; color: var(--text-main);">ยินดีต้อนรับสู่แดชบอร์ด</span>
         </h1>
 
         <!-- Daily Quote Box -->
@@ -149,7 +158,7 @@
         </div>
 
         <!-- Mood & Sleep Wellness Section -->
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px;">
+        <div class="premium-grid premium-grid-cols-2">
           <!-- Mood Tracker -->
           <div class="calculator-box"
             style="margin: 0; background: rgba(168, 85, 247, 0.1); border: 1px solid #a855f7; text-align: center;">
@@ -223,54 +232,41 @@
           <p style="font-size: 0.85em; color: #374151; margin-bottom: 15px;">สรุปแนวโน้มสุขภาพของคุณในรอบ 7 วันที่ผ่านมา
           </p>
 
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
-            <div style="height: 180px; background: rgba(255,255,255,0.4); border-radius: 12px; padding: 10px;">
+          <div class="premium-grid premium-grid-cols-2" style="gap: 15px;">
+            <div
+              style="background: rgba(255,255,255,0.4); border-radius: 12px; padding: 10px; display: flex; flex-direction: column; width: 100%; box-sizing: border-box;">
               <p style="font-size: 0.75em; font-weight: bold; color: #4b5563; text-align: center; margin-bottom: 5px;">
                 💧 การดื่มน้ำ (แก้ว)</p>
-              <canvas id="weeklyWaterChart"></canvas>
+              <div style="position: relative; height: 160px; width: 100%;">
+                <canvas id="weeklyWaterChart"></canvas>
+              </div>
             </div>
-            <div style="height: 180px; background: rgba(255,255,255,0.4); border-radius: 12px; padding: 10px;">
+            <div
+              style="background: rgba(255,255,255,0.4); border-radius: 12px; padding: 10px; display: flex; flex-direction: column; width: 100%; box-sizing: border-box;">
               <p style="font-size: 0.75em; font-weight: bold; color: #4b5563; text-align: center; margin-bottom: 5px;">
                 😴 การนอนหลับ (ชม.)</p>
-              <canvas id="weeklySleepChart"></canvas>
+              <div style="position: relative; height: 160px; width: 100%;">
+                <canvas id="weeklySleepChart"></canvas>
+              </div>
             </div>
           </div>
         </div>
 
-        <div class="calculator-box" style="margin-top: 20px;">
-          <h3 style="margin-bottom: 15px; text-align: left;">ข้อมูลโปรไฟล์ของคุณ</h3>
-          <div class="input-group">
-            <label>อายุ (ปี):</label>
-            <input type="number" id="profile-age" placeholder="เช่น 25">
-          </div>
-          <div class="input-group">
-            <label>เพศ:</label>
-            <select id="profile-gender" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc;">
-              <option value="">เลือกเพศ...</option>
-              <option value="male">ชาย</option>
-              <option value="female">หญิง</option>
-            </select>
-          </div>
-          <div class="input-group">
-            <label>ส่วนสูงปัจจุบัน (ซม.):</label>
-            <input type="number" id="profile-height" placeholder="เช่น 170">
-          </div>
-          <div class="input-group">
-            <label>น้ำหนักปัจจุบัน (กก.):</label>
-            <input type="number" id="profile-weight" placeholder="เช่น 65">
-          </div>
-          <div class="input-group">
-            <label>น้ำหนักเป้าหมาย (กก.):</label>
-            <input type="number" id="profile-goal" placeholder="เช่น 60">
-          </div>
-          <div class="input-group">
-            <label>รูปแบบการฝึก (เป้าหมาย):</label>
-            <select id="profile-activity" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ccc;">
-              <option value="general">ทั่วไป (ลด/ควบคุมน้ำหนัก)</option>
-              <option value="bodybuilder">💪 สร้างกล้ามเนื้อ (Bodybuilder)</option>
-            </select>
-          </div>
-          <button onclick="saveProfile()" class="btn">บันทึกโปรไฟล์</button>
+        <div class="calculator-box" style="margin-top: 20px; text-align: center;">
+          <h3 style="margin-bottom: 15px;">ข้อมูลโปรไฟล์ของคุณ</h3>
+          <p style="color: #64748b; margin-bottom: 15px;">อัปเดตน้ำหนัก ส่วนสูง และเป้าหมายของคุณเพื่อให้ AI
+            ประมวลผลได้แม่นยำยิ่งขึ้น</p>
+          <a href="profile.html" class="btn"
+            style="display: inline-block; text-decoration: none; width: auto; padding: 10px 20px; background: linear-gradient(90deg, #10b981, #059669);"><ion-icon
+              name="person-circle-outline" style="vertical-align: middle;"></ion-icon> จัดการข้อมูลโปรไฟล์</a>
+
+          <!-- Hidden Inputs for AI calculation backwards compatibility -->
+          <input type="hidden" id="profile-age">
+          <input type="hidden" id="profile-gender">
+          <input type="hidden" id="profile-height">
+          <input type="hidden" id="profile-weight">
+          <input type="hidden" id="profile-goal">
+          <input type="hidden" id="profile-activity">
         </div>
       </section>
 
@@ -356,32 +352,28 @@
     </div>
   </main>
 
-  <script sret="/Backend/server.js"></script>
-  <script src="script.js"></script>
+  <script src="ui.js" defer></script>
+  <script src="api.js" defer></script>
+  <script src="auth.js" defer></script>
+  <script src="ai.js" defer></script>
   <!-- AI Wellness Chatbot Widget -->
-  <div id="ai-chat-widget" style="position: fixed; bottom: 20px; right: 20px; z-index: 1000;">
-    <button onclick="toggleChat()" id="chat-toggle-btn"
-      style="width: 60px; height: 60px; border-radius: 50%; background: #0ea5e9; color: white; border: none; box-shadow: 0 4px 15px rgba(14, 165, 233, 0.4); cursor: pointer; font-size: 30px; display: flex; align-items: center; justify-content: center;">
+  <div id="ai-chat-widget" class="ai-chat-widget">
+    <button onclick="toggleChat()" id="chat-toggle-btn" class="chat-toggle-btn">
       <ion-icon name="chatbubbles-outline"></ion-icon>
     </button>
-    <div id="chat-window"
-      style="display: none; position: absolute; bottom: 80px; right: 0; width: 350px; height: 500px; background: white; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); flex-direction: column; overflow: hidden; border: 1px solid #e2e8f0;">
-      <div
-        style="background: #0ea5e9; color: white; padding: 15px; font-weight: bold; display: flex; justify-content: space-between; align-items: center;">
+    <div id="chat-window" class="chat-window" style="display: none;">
+      <div class="chat-header">
         <span>🤖 AI Wellness Assistant</span>
-        <ion-icon name="close-outline" onclick="toggleChat()" style="cursor: pointer; font-size: 24px;"></ion-icon>
+        <ion-icon name="close-outline" onclick="toggleChat()"></ion-icon>
       </div>
-      <div id="chat-messages" style="flex: 1; padding: 15px; overflow-y: auto; background: #f8fafc; font-size: 0.9em;">
-        <div
-          style="background: #e2e8f0; padding: 10px; border-radius: 10px 10px 10px 0; margin-bottom: 10px; max-width: 80%;">
+      <div id="chat-messages" class="chat-messages">
+        <div class="chat-msg ai-msg">
           สวัสดีครับ! ผม NeWGen AI ยินดีที่ได้รู้จัก มีอะไรให้ผมช่วยแนะนำด้านสุขภาพไหมครับ?
         </div>
       </div>
-      <div style="padding: 15px; border-top: 1px solid #e2e8f0; display: flex; gap: 10px; background: white;">
-        <input type="text" id="chat-input" placeholder="พิมพ์คำถามที่นี่..."
-          style="flex: 1; padding: 8px 12px; border-radius: 20px; border: 1px solid #cbd5e1; outline: none;">
-        <button onclick="sendChatMessage()"
-          style="background: #0ea5e9; color: white; border: none; border-radius: 50%; width: 35px; height: 35px; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+      <div class="chat-input-area">
+        <input type="text" id="chat-input" placeholder="พิมพ์คำถามที่นี่...">
+        <button onclick="sendChatMessage()" class="chat-send-btn">
           <ion-icon name="send"></ion-icon>
         </button>
       </div>

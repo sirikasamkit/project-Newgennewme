@@ -26,6 +26,12 @@
       <a href="about.html">About</a>
       <a href="services.html">Services</a>
       <a href="contact.html">Contact</a>
+      <a href="profile.html" id="nav-profile-btn"
+        style="display:none; align-items: center; gap: 8px; color: #10b981; font-weight: bold; text-decoration: none;">
+        <img id="nav-profile-pic" src="https://via.placeholder.com/30"
+          style="width: 30px; height: 30px; border-radius: 50%; object-fit: cover; border: 1px solid #10b981;">
+        Profile
+      </a>
       <a href="history.html" id="nav-history-btn" style="display:none; color: #0ea5e9; font-weight: bold;">History</a>
       <button id="theme-toggle" onclick="toggleTheme()" title="Toggle Dark Mode"></button>
       <a href="admin.html" id="nav-admin-btn" style="display:none; color: #ffeb3b; font-weight: bold;">Admin Panel</a>
@@ -136,7 +142,10 @@
     </div>
   </section>
 
-  <script src="script.js"></script>
+  <script src="ui.js" defer></script>
+  <script src="api.js" defer></script>
+  <script src="auth.js" defer></script>
+  <script src="ai.js" defer></script>
   <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
   <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
 
