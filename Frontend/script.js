@@ -42,7 +42,7 @@ async function calculateBMI() {
 
     if (weight > 0 && height > 0) {
         const bmi = (weight / ((height / 100) ** 2)).toFixed(2);
-
+        
         let status = "";
         if (bmi < 18.5) status = "น้ำหนักน้อย / ผอม";
         else if (bmi < 23) status = "ปกติ (สุขภาพดี)";
@@ -56,7 +56,7 @@ async function calculateBMI() {
 
         const resultArea = document.getElementById('result-area');
         const oldBox = document.getElementById('ai-plan');
-        if (oldBox) oldBox.remove();
+        if(oldBox) oldBox.remove();
 
         const aiResponseBox = document.createElement('div');
         aiResponseBox.id = "ai-plan";
@@ -64,19 +64,23 @@ async function calculateBMI() {
         resultArea.appendChild(aiResponseBox);
 
         try {
-            // เรียกใช้ API ของ Node.js (ไม่ใช่ PHP)
-            const response = await fetch('/api/generate-plan', {
+            const response = await fetch('http://localhost:5000/api/generate-plan', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ bmi, weight, height, status })
+                body: JSON.stringify({ 
+                    bmi: bmi, 
+                    status: status,
+                    weight: weight,
+                    height: height
+                })
             });
 
             const data = await response.json();
             if (!response.ok) throw new Error(data.error || "AI Error");
 
             // ใช้ .replace(/\n/g, '<br>') เพื่อเปลี่ยนการขึ้นบรรทัดใหม่จาก AI ให้เป็นแท็ก <br> ของ HTML
-            const formattedPlan = data.plan.replace(/\n/g, '<br>');
-
+            const formattedPlan = data.plan.replace(/\n/g, '<br>'); 
+            
             aiResponseBox.innerHTML = `
                 <div style="background: #f0f4f8; padding: 15px; border-radius: 10px; margin-top: 10px; text-align: left; border-left: 5px solid #162938;">
                     <h3 style="color: #162938; margin-bottom: 10px;">📋 แผนสุขภาพจาก NeWGen NewME AI:</h3>
@@ -94,7 +98,7 @@ async function calculateBMI() {
 function openContactForm() {
     // วิธีที่ 1: ส่งไปที่หน้า Contact โดยตรง
     window.location.href = "contact.html";
-
+    
     // วิธีที่ 2: หรือถ้าอยากให้ส่งอีเมลทันทีเมื่อกดปุ่ม
     // window.location.href = "mailto:support@newgen.com?subject=Report an Issue";
 }
@@ -116,7 +120,7 @@ async function analyzeFoodImage() {
     contentArea.innerHTML = "<i>AI กำลังมองดูอาหารของคุณ...</i>";
 
     try {
-        const response = await fetch('/api/analyze-food', {
+        const response = await fetch('http://localhost:5000/api/analyze-food', {
             method: 'POST',
             body: formData // ส่งเป็น FormData สำหรับไฟล์
         });
@@ -137,7 +141,7 @@ function previewImage(event) {
     const previewContainer = document.getElementById('image-preview-container');
     const previewImg = document.getElementById('preview-img');
 
-    reader.onload = function () {
+    reader.onload = function() {
         if (reader.readyState === 2) {
             previewImg.src = reader.result;
             previewContainer.style.display = "block"; // แสดง Container เมื่อโหลดรูปเสร็จ
@@ -156,12 +160,12 @@ if (loginForm) {
     loginForm.onsubmit = async (e) => {
         e.preventDefault(); // ป้องกันหน้าเว็บรีโหลด
 
-        const email = document.getElementById('login-email').value;
-        const password = document.getElementById('login-password').value;
+        const email = document.getElementById('login-email').value; //
+        const password = document.getElementById('login-password').value; //
 
         try {
-            // ส่งข้อมูลไปยัง Node.js Backend Port 5000
-            const response = await fetch('/api/login', {
+            // ส่งข้อมูลไปยัง PHP Backend ที่รันบนพอร์ต 8081
+            const response = await fetch('http://localhost:8081/auth_login.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password })
@@ -169,57 +173,17 @@ if (loginForm) {
 
             const result = await response.json();
 
-            if (response.ok) { // เช็ค response.ok แทน status text
+            if (result.status === "success") {
                 alert("ยินดีต้อนรับคุณ " + result.user);
                 // ปิดหน้าต่าง Login เมื่อสำเร็จ
                 const wrapper = document.querySelector('.wrapper');
                 wrapper.classList.remove('active-popup');
-
-                // (Optional) เก็บ token หรือ user data ลง localStorage
-                localStorage.setItem('user', JSON.stringify(result.user));
-
             } else {
-                alert(result.message || "Login failed");
+                alert(result.message);
             }
         } catch (error) {
             console.error("Login Error:", error);
             alert("ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้");
-        }
-    };
-}
-
-// เพิ่ม Logic สำหรับ Register
-const registerForm = document.querySelector('.form-box.register form');
-if (registerForm) {
-    registerForm.onsubmit = async (e) => {
-        e.preventDefault();
-
-        // ดึงค่าจาก input ที่มี id ระบุไว้ชัดเจน
-        const username = document.getElementById('reg-username').value;
-        const email = document.getElementById('reg-email').value;
-        const password = document.getElementById('reg-password').value;
-
-        try {
-            const response = await fetch('/api/register', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, email, password })
-            });
-
-            const result = await response.json();
-
-            if (response.ok) {
-                alert("สมัครสมาชิกสำเร็จ! กรุณา Login");
-                // สลับไปหน้า Login
-                const wrapper = document.querySelector('.wrapper');
-                wrapper.classList.remove('active');
-            } else {
-                alert(result.error || "Registration failed");
-            }
-
-        } catch (error) {
-            console.error("Register Error:", error);
-            alert("เชื่อมต่อ Server ไม่ได้");
         }
     };
 }

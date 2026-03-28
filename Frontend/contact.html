@@ -1,138 +1,165 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>New gen new me</title>
-    <link rel="stylesheet" href="main.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>New gen new me</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Prompt:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="main.css">
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
+
 <body>
 
-    <header>
-       <h2 class="Logo">
-        <span class="newgen">NeWGen</span>
-        <span class="newme">NewME</span>
-       </h2>
-       <nav class="navigation">
-        <a href="index.html">Home</a>
-        <a href="about.html">About</a>
-        <a href="services.html">Services</a>
-        <a href="contact.html">Contact</a>
-        <button class="btnLogin-popup">Login</button>
-       </nav>
-   </header>
+  <header>
+    <h2 class="Logo">
+      <span class="newgen">NeWGen</span>
+      <span class="newme">NewME</span>
+    </h2>
+    <nav class="navigation">
+      <a href="index.html">Home</a>
+      <a href="about.html">About</a>
+      <a href="services.html">Services</a>
+      <a href="contact.html">Contact</a>
+      <a href="profile.html" id="nav-profile-btn"
+        style="display:none; align-items: center; gap: 8px; color: #10b981; font-weight: bold; text-decoration: none;">
+        <img id="nav-profile-pic" src="https://via.placeholder.com/30"
+          style="width: 30px; height: 30px; border-radius: 50%; object-fit: cover; border: 1px solid #10b981;">
+        Profile
+      </a>
+      <a href="history.html" id="nav-history-btn" style="display:none; color: #0ea5e9; font-weight: bold;">History</a>
+      <button id="theme-toggle" onclick="toggleTheme()" title="Toggle Dark Mode"></button>
+      <a href="admin.html" id="nav-admin-btn" style="display:none; color: #ffeb3b; font-weight: bold;">Admin Panel</a>
+      <button id="nav-login-btn" class="btnLogin-popup">Login</button>
+      <button id="nav-logout-btn" class="btn"
+        style="display:none; background: #e74c3c; border-color: #c0392b; color: white;"
+        onclick="logout()">Logout</button>
+    </nav>
+  </header>
 
-   <div class="wrapper">
-       <span class="icon-close">
-        <ion-icon name="close"></ion-icon>
-      </span>
+  <div class="wrapper">
+    <span class="icon-close">
+      <ion-icon name="close"></ion-icon>
+    </span>
 
-       <div class="form-box login">
-             <h2>Login</h2>
-             <form action="#">
-              <div class="input-box">
-                <span class="icon"><ion-icon name="mail"></ion-icon></span>
-                <input type="email" id="login-email" required>
-                <label>Email</label>
-              </div>
-              <div class="input-box">
-                <span class="icon"><ion-icon name="lock-closed"></ion-icon></span>
-                <input type="password" id="login-password" required>
-                <label>Password</label>
-              </div>
-              <div class="remember-forgot">
-                <label><input type="checkbox"> remember me</label>
-                <a href="#">Forgot Password?</a>
-              </div>
-              <button type="submit" id="login-btn" class="btn">Login</button>
-              <div class="login-register">
-                <p>Don't have an account? <a href="#"class="register-link">Register</a></p>
-              </div>
-             </form>
-       </div>
+    <div class="form-box login">
+      <h2>Login</h2>
+      <form action="#">
+        <div class="input-box">
+          <span class="icon"><ion-icon name="mail"></ion-icon></span>
+          <input type="email" id="login-email" required>
+          <label>Email</label>
+        </div>
+        <div class="input-box">
+          <span class="icon"><ion-icon name="lock-closed"></ion-icon></span>
+          <input type="password" id="login-password" required>
+          <label>Password</label>
+        </div>
+        <div class="remember-forgot">
+          <label><input type="checkbox"> remember me</label>
+          <a href="#">Forgot Password?</a>
+        </div>
+        <button type="submit" id="login-btn" class="btn">Login</button>
+        <div class="login-register">
+          <p>Don't have an account? <a href="#" class="register-link">Register</a></p>
+        </div>
+      </form>
+    </div>
 
-       <div class="form-box register">
-        <h2>Registration</h2>
-        <form action="#">
-          <div class="input-box">
-            <span class="icon"><ion-icon name="person"></ion-icon></ion-icon></span>
-            <input type="text" required>
-            <label>Username</label>
-          </div>
-         <div class="input-box">
-           <span class="icon"><ion-icon name="mail"></ion-icon></span>
-           <input type="email" required>
-           <label>Email</label>
-         </div>
-         <div class="input-box">
-           <span class="icon"><ion-icon name="lock-closed"></ion-icon></span>
-           <input type="password" required>
-           <label>Password</label>
-         </div>
-         <div class="remember-forgot">
-           <label><input type="checkbox"> I agree to the terms & conditions</label>
-         </div>
-         <button type="submit" class="btn">Register</button>
-         <div class="login-register">
-           <p>Already have an account? <a href="#"class="login-link">login</a></p>
-         </div>
-        </form>
+    <div class="form-box register">
+      <h2>Registration</h2>
+      <form action="#">
+        <div class="input-box">
+          <span class="icon"><ion-icon name="person"></ion-icon></ion-icon></span>
+          <input type="text" required>
+          <label>Username</label>
+        </div>
+        <div class="input-box">
+          <span class="icon"><ion-icon name="mail"></ion-icon></span>
+          <input type="email" required>
+          <label>Email</label>
+        </div>
+        <div class="input-box">
+          <span class="icon"><ion-icon name="lock-closed"></ion-icon></span>
+          <input type="password" required>
+          <label>Password</label>
+        </div>
+        <div class="remember-forgot">
+          <label><input type="checkbox"> I agree to the terms & conditions</label>
+        </div>
+        <button type="submit" class="btn">Register</button>
+        <div class="login-register">
+          <p>Already have an account? <a href="#" class="login-link">login</a></p>
+        </div>
+      </form>
+    </div>
   </div>
-   </div>
 
-   <section class="contact-container">
+  <section class="contact-container">
     <div class="contact-header">
-        <h1>Contact Our Team</h1>
-        <p>ทีมผู้พัฒนา NewGen NewME พร้อมช่วยเหลือคุณ</p>
+      <h1>Contact Our Team</h1>
+      <p>ทีมผู้พัฒนา NewGen NewME พร้อมช่วยเหลือคุณ</p>
     </div>
 
     <div class="dev-grid">
-        <div class="dev-card">
-            <div class="dev-img">
-                <ion-icon name="person-circle-outline"></ion-icon> </div>
-            <h3>Sirikasamkit Thiemthong</h3>
-            <p class="role">Full Stack Developer</p>
-            <div class="dev-socials">
-                <a href="https://github.com/sirikasamkit" target="_blank"><ion-icon name="logo-github"></ion-icon></a>
-                <a href="mailto:dev1@example.com"><ion-icon name="mail-outline"></ion-icon></a>
-            </div>
+      <div class="dev-card">
+        <div class="dev-img-container">
+          <img src="https://github.com/sirikasamkit.png" alt="Sirikasamkit">
         </div>
+        <h3>Sirikasamkit Thiemthong</h3>
+        <p class="role">Full Stack Developer</p>
+        <div class="dev-socials">
+          <a href="https://github.com/sirikasamkit" target="_blank"><ion-icon name="logo-github"></ion-icon></a>
+          <a href="mailto:dev1@example.com"><ion-icon name="mail-outline"></ion-icon></a>
+        </div>
+      </div>
 
-        <div class="dev-card">
-            <div class="dev-img">
-                <ion-icon name="person-circle-outline"></ion-icon>
-            </div>
-            <h3>Aunnop Somocha</h3>
-            <p class="role">Frontend Developer</p>
-            <div class="dev-socials">
-                <a href="https://github.com/Aunnop-Somocha" target="_blank"><ion-icon name="logo-github"></ion-icon></a>
-                <a href="mailto:dev2@example.com"><ion-icon name="mail-outline"></ion-icon></a>
-            </div>
+      <div class="dev-card">
+        <div class="dev-img-container">
+          <img src="https://github.com/Aunnop-Somocha.png" alt="Aunnop">
         </div>
+        <h3>Aunnop Somocha</h3>
+        <p class="role">Frontend Developer</p>
+        <div class="dev-socials">
+          <a href="https://github.com/Aunnop-Somocha" target="_blank"><ion-icon name="logo-github"></ion-icon></a>
+          <a href="mailto:dev2@example.com"><ion-icon name="mail-outline"></ion-icon></a>
+        </div>
+      </div>
 
-        <div class="dev-card">
-            <div class="dev-img">
-                <ion-icon name="person-circle-outline"></ion-icon>
-            </div>
-            <h3>Narusorn Ruengchot</h3>
-            <p class="role">Backend Developer</p>
-            <div class="dev-socials">
-                <a href="https://github.com/NarusornRuengchot" target="_blank"><ion-icon name="logo-github"></ion-icon></a>
-                <a href="mailto:dev3@example.com"><ion-icon name="mail-outline"></ion-icon></a>
-            </div>
+      <div class="dev-card">
+        <div class="dev-img-container">
+          <img src="https://github.com/NarusornRuengchot.png" alt="Narusorn">
         </div>
+        <h3>Narusorn Ruengchot</h3>
+        <p class="role">Backend Developer</p>
+        <div class="dev-socials">
+          <a href="https://github.com/NarusornRuengchot" target="_blank"><ion-icon name="logo-github"></ion-icon></a>
+          <a href="mailto:dev3@example.com"><ion-icon name="mail-outline"></ion-icon></a>
+        </div>
+      </div>
     </div>
 
-    <div class="report-box">
+    <div class="report-banner">
+      <div class="report-banner-text">
         <h3>Found a bug?</h3>
         <p>หากพบปัญหาทางเทคนิค สามารถแจ้งทีมพัฒนาได้ทันที</p>
-        <button class="btn-report" onclick="alert('ขอบคุณที่แจ้งปัญหา! ทีมงานจะรีบตรวจสอบครับ')">แจ้งปัญหาเว็บ</button>
+      </div>
+      <button class="btn-report" onclick="alert('ขอบคุณที่แจ้งปัญหา! ทีมงานจะรีบตรวจสอบครับ')">แจ้งปัญหาเว็บ</button>
     </div>
-</section>
+  </section>
 
-   <script src="script.js"></script>
-   <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
-   <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
-    
+  <script src="ui.js" defer></script>
+  <script src="api.js" defer></script>
+  <script src="auth.js" defer></script>
+  <script src="ai.js" defer></script>
+  <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+  <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+
 </body>
+
 </html>

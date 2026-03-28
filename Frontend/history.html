@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New gen new me - History</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Prompt:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="main.css">
+    <link rel="stylesheet" href="https://pyscript.net/releases/2024.1.1/core.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+
+    <header>
+        <h2 class="Logo">
+            <span class="newgen">NeWGen</span>
+            <span class="newme">NewME</span>
+        </h2>
+        <nav class="navigation">
+            <a href="index.html">Home</a>
+            <a href="about.html">About</a>
+            <a href="services.html">Services</a>
+            <a href="contact.html">Contact</a>
+            <a href="profile.html" id="nav-profile-btn"
+                style="display:none; align-items: center; gap: 8px; color: #10b981; font-weight: bold; text-decoration: none;">
+                <img id="nav-profile-pic" src="https://via.placeholder.com/30"
+                    style="width: 30px; height: 30px; border-radius: 50%; object-fit: cover; border: 1px solid #10b981;">
+                Profile
+            </a>
+            <a href="history.html" id="nav-history-btn"
+                style="display:none; color: #0ea5e9; font-weight: bold;">History</a>
+            <button id="theme-toggle" onclick="toggleTheme()" title="Toggle Dark Mode"></button>
+            <a href="admin.html" id="nav-admin-btn" style="display:none; color: #ffeb3b; font-weight: bold;">Admin
+                Panel</a>
+            <button id="nav-login-btn" class="btnLogin-popup">Login</button>
+            <button id="nav-logout-btn" class="btn"
+                style="display:none; background: #e74c3c; border-color: #c0392b; color: white;"
+                onclick="logout()">Logout</button>
+        </nav>
+    </header>
+
+    <!-- Login/Register Popup (Required for auth flows) -->
+    <div class="wrapper">
+        <span class="icon-close">
+            <ion-icon name="close"></ion-icon>
+        </span>
+
+        <div class="form-box login">
+            <h2>Login</h2>
+            <form action="#">
+                <div class="input-box">
+                    <span class="icon"><ion-icon name="mail"></ion-icon></span>
+                    <input type="email" id="login-email" required>
+                    <label>Email</label>
+                </div>
+                <div class="input-box">
+                    <span class="icon"><ion-icon name="lock-closed"></ion-icon></span>
+                    <input type="password" id="login-password" required>
+                    <label>Password</label>
+                </div>
+                <div class="remember-forgot">
+                    <label><input type="checkbox"> remember me</label>
+                    <a href="#">Forgot Password?</a>
+                </div>
+                <button type="submit" id="login-btn" class="btn">Login</button>
+                <div class="login-register">
+                    <p>Don't have an account? <a href="#" class="register-link">Register</a></p>
+                </div>
+            </form>
+        </div>
+
+        <div class="form-box register">
+            <h2>Registration</h2>
+            <form action="#">
+                <div class="input-box">
+                    <span class="icon"><ion-icon name="person"></ion-icon></span>
+                    <input type="text" id="reg-username" required>
+                    <label>Username</label>
+                </div>
+                <div class="input-box">
+                    <span class="icon"><ion-icon name="mail"></ion-icon></span>
+                    <input type="email" id="reg-email" required>
+                    <label>Email</label>
+                </div>
+                <div class="input-box">
+                    <span class="icon"><ion-icon name="lock-closed"></ion-icon></span>
+                    <input type="password" id="reg-password" required>
+                    <label>Password</label>
+                </div>
+                <div class="remember-forgot">
+                    <label><input type="checkbox"> I agree to the terms & conditions</label>
+                </div>
+                <button type="submit" class="btn">Register</button>
+                <div class="login-register">
+                    <p>Already have an account? <a href="#" class="login-link">login</a></p>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <main class="content-wrapper">
+        <!-- View สำหรับคนที่ยังไม่ได้ล็อกอิน (Guest) -->
+        <div id="guest-view">
+            <section class="info-card">
+                <h1>กรุณาเข้าสู่ระบบ</h1>
+                <p>คุณต้องเข้าสู่ระบบก่อนเพื่อดูประวัติสุขภาพของคุณ</p>
+                <p style="margin-top: 15px;">
+                    <a href="#" onclick="document.querySelector('.wrapper').classList.add('active-popup')"
+                        style="color:#0ea5e9; font-weight: bold;">คลิกที่นี่เพื่อเข้าสู่ระบบ</a>
+                </p>
+            </section>
+        </div>
+
+        <!-- View สำหรับคนที่ล็อกอินแล้ว (Dashboard) -->
+        <div id="dashboard-view" style="display: none;">
+            <section class="info-card" id="history-section">
+                <h1 style="margin-bottom: 10px;">รายการประวัติย้อนหลัง</h1>
+                <p style="color: #64748b; margin-bottom: 30px;">ติดตามความก้าวหน้าและการวิเคราะห์สุขภาพของคุณได้ที่นี่</p>
+
+                <!-- Tabs Navigation -->
+                <div class="history-tabs">
+                    <button id="tab-btn-bmi" class="history-tab-btn active" onclick="switchTab('bmi')">
+                        <ion-icon name="fitness-outline"></ion-icon> ประวัติ BMI
+                    </button>
+                    <button id="tab-btn-food" class="history-tab-btn" onclick="switchTab('food')">
+                        <ion-icon name="restaurant-outline"></ion-icon> วิเคราะห์อาหาร
+                    </button>
+                    <button id="tab-btn-plan" class="history-tab-btn" onclick="switchTab('plan')">
+                        <ion-icon name="sparkles-outline"></ion-icon> แผนสุขภาพ AI
+                    </button>
+                </div>
+
+                <!-- BMI Tab Content -->
+                <div id="bmi-tab" class="tab-content active">
+                    <div id="chart-container"
+                        style="display:none; margin-bottom: 30px; background: rgba(255,255,255,0.05); padding: 20px; border-radius: 20px; border: 1px solid var(--card-border);">
+                        <h3 style="color: #0ea5e9; text-align: left; margin-bottom: 15px; font-size: 1.1em;">
+                            📈 แนวโน้มน้ำหนักของคุณ
+                        </h3>
+                        <div style="height: 300px;">
+                            <canvas id="historyChart"></canvas>
+                        </div>
+                    </div>
+                    <div id="bmi-list"></div>
+                </div>
+
+                <!-- Food Tab Content -->
+                <div id="food-tab" class="tab-content">
+                    <div id="food-list"></div>
+                </div>
+
+                <!-- Plan Tab Content -->
+                <div id="plan-tab" class="tab-content">
+                    <div id="plan-list"></div>
+                </div>
+
+                <!-- Load More Button -->
+                <div id="load-more-container" style="text-align: center; margin-top: 30px; display: none;">
+                    <button id="load-more-btn" onclick="window.loadHistory(currentHistoryPage + 1, true)" class="btn" style="width: auto; padding: 12px 30px;">
+                        โหลดข้อมูลเพิ่มเติม <ion-icon name="chevron-down-outline" style="margin-left: 5px;"></ion-icon>
+                    </button>
+                </div>
+                
+                <!-- Skeleton Loader Template (Hidden by default) -->
+                <div id="history-skeleton" style="display: none;">
+                    <div class="history-item-card skeleton-loader" style="height: 100px; margin-bottom: 15px; border-radius: 20px;"></div>
+                    <div class="history-item-card skeleton-loader" style="height: 100px; margin-bottom: 15px; border-radius: 20px;"></div>
+                    <div class="history-item-card skeleton-loader" style="height: 100px; border-radius: 20px;"></div>
+                </div>
+            </section>
+        </div>
+
+    </main>
+
+    <!-- Auto-load history when on history page if logged in -->
+    <script>
+        // We can call loadHistory automatically if the user is already logged in
+        document.addEventListener("DOMContentLoaded", function () {
+            // Delay slightly to ensure script.js variables and token are setup
+            setTimeout(() => {
+                const token = localStorage.getItem('token');
+                if (token) {
+                    loadHistory();
+                }
+            }, 500);
+        });
+    </script>
+
+    <script src="ui.js" defer></script>
+    <script src="api.js" defer></script>
+    <script src="auth.js" defer></script>
+    <script src="ai.js" defer></script>
+
+    <!-- PWA Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('service-worker.js')
+                    .then(registration => {
+                        console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                    })
+                    .catch(err => {
+                        console.log('ServiceWorker registration failed: ', err);
+                    });
+            });
+        }
+    </script>
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+
+</body>
+
+</html>

@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - NewGen NewME</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Prompt:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="main.css">
+    <style>
+        .admin-wrapper {
+            max-width: 1000px;
+            margin: 100px auto 40px auto;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(15px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: #fff;
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+            border-left: 5px solid #0ea5e9;
+        }
+
+        .stat-card h3 {
+            color: #555;
+            font-size: 1.1em;
+            margin-bottom: 10px;
+        }
+
+        .stat-card .num {
+            font-size: 2em;
+            font-weight: bold;
+            color: #162938;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: #fff;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        th,
+        td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        th {
+            background: #162938;
+            color: #fff;
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+            color: #fff;
+            border: none;
+            padding: 5px 15px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .btn-danger:hover {
+            background: #c0392b;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+
+<body>
+
+    <header>
+        <h2 class="Logo">
+            <span class="newgen">NeWGen</span>
+            <span class="newme">NewME</span>
+            <span style="font-size: 0.5em; color: #e74c3c; vertical-align: middle;">ADMIN</span>
+        </h2>
+        <nav class="navigation">
+            <button id="theme-toggle" onclick="toggleTheme()" title="Toggle Dark Mode"
+                style="margin-right: 20px;"></button>
+            <a href="index.html">Home</a>
+            <a href="profile.html" id="nav-profile-btn"
+                style="display:none; align-items: center; gap: 8px; color: #10b981; font-weight: bold; text-decoration: none;">
+                <img id="nav-profile-pic" src="https://via.placeholder.com/30"
+                    style="width: 30px; height: 30px; border-radius: 50%; object-fit: cover; border: 1px solid #10b981;">
+                Profile
+            </a>
+            <a href="history.html" id="nav-history-btn"
+                style="display:none; color: #0ea5e9; font-weight: bold;">History</a>
+            <a href="admin.html" id="nav-admin-btn" style="display:none; color: #ffeb3b; font-weight: bold;">Admin
+                Panel</a>
+        </nav>
+    </header>
+
+    <div class="admin-wrapper" id="admin-panel" style="display:none;">
+        <h1 style="color: #162938; margin-bottom: 20px;"><ion-icon name="shield"></ion-icon> Admin Dashboard</h1>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <h3>Total Users</h3>
+                <div class="num" id="stat-users">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>Food Scans</h3>
+                <div class="num" id="stat-scans">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>AI Plans Generated</h3>
+                <div class="num" id="stat-plans">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>BMI Calculations</h3>
+                <div class="num" id="stat-bmi">0</div>
+            </div>
+        </div>
+
+        <h2 style="color: #162938; margin-bottom: 15px;">User Management</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Username</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>Registered At</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody id="user-table-body">
+                <!-- Users will go here -->
+            </tbody>
+        </table>
+    </div>
+
+    <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+    <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+
+    <script>
+        // Admin Auth Check & Load Data
+        window.onload = async () => {
+            const token = localStorage.getItem('token');
+            const is_admin = localStorage.getItem('is_admin');
+
+            if (!token || is_admin !== "1") {
+                await Swal.fire({ icon: 'error', title: 'Access Denied', text: 'Admins Only.' });
+                window.location.href = "index.html";
+                return;
+            }
+
+            document.getElementById('admin-panel').style.display = 'block';
+            await loadStats(token);
+            await loadUsers(token);
+        };
+
+        async function loadStats(token) {
+            try {
+                const res = await fetch('/api/admin/stats', { headers: { 'Authorization': `Bearer ${token}` } });
+                if (res.ok) {
+                    const data = await res.json();
+                    document.getElementById('stat-users').innerText = data.totalUsers;
+                    document.getElementById('stat-scans').innerText = data.totalScans;
+                    document.getElementById('stat-plans').innerText = data.totalPlans;
+                    document.getElementById('stat-bmi').innerText = data.totalBMICalcs;
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        async function loadUsers(token) {
+            try {
+                const res = await fetch('/api/admin/users', { headers: { 'Authorization': `Bearer ${token}` } });
+                if (res.ok) {
+                    const users = await res.json();
+                    const tbody = document.getElementById('user-table-body');
+                    let html = '';
+                    users.forEach(u => {
+                        const role = u.is_admin ? '<strong style="color:green;">Admin</strong>' : 'User';
+                        const delBtn = u.is_admin ? '' : `<button class="btn-danger" onclick="deleteUser(${u.id})">Delete</button>`;
+                        html += `
+                            <tr>
+                                <td>${u.id}</td>
+                                <td>${u.username}</td>
+                                <td>${u.email}</td>
+                                <td>${role}</td>
+                                <td>${u.created_at || '-'}</td>
+                                <td>${delBtn}</td>
+                            </tr>
+                        `;
+                    });
+                    tbody.innerHTML = html;
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        async function deleteUser(id) {
+            const result = await Swal.fire({
+                title: 'Are you sure?',
+                text: "You won't be able to revert this!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#e74c3c',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'Yes, delete it!'
+            });
+
+            if (!result.isConfirmed) return;
+            const token = localStorage.getItem('token');
+            try {
+                const res = await fetch(`/api/admin/users/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    await Swal.fire('Deleted!', 'User has been deleted.', 'success');
+                    loadStats(token);
+                    loadUsers(token);
+                } else {
+                    Swal.fire('Error', 'Failed to delete user.', 'error');
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        // ===================================
+        // Theme Options (Light/Dark Mode) duplicated for isolated admin page
+        // ===================================
+        function applyTheme(theme) {
+            const btn = document.getElementById('theme-toggle');
+            if (theme === 'dark') {
+                document.body.classList.add('dark-mode');
+                if (btn) btn.innerHTML = '<ion-icon name="sunny-outline"></ion-icon>';
+            } else {
+                document.body.classList.remove('dark-mode');
+                if (btn) btn.innerHTML = '<ion-icon name="moon-outline"></ion-icon>';
+            }
+        }
+
+        function toggleTheme() {
+            const currentTheme = localStorage.getItem('theme') || 'light';
+            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+            localStorage.setItem('theme', newTheme);
+            applyTheme(newTheme);
+        }
+    </script>
+</body>
+
+</html>
