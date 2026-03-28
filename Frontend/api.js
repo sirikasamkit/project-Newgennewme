@@ -143,6 +143,7 @@ window.renderHistoryChart = function (bmiData) {
                 label: 'น้ำหนัก (กก.)',
                 data: weights,
                 borderColor: '#0ea5e9',
+
                 backgroundColor: 'rgba(14, 165, 233, 0.2)',
                 borderWidth: 2,
                 pointBackgroundColor: '#162938',
@@ -165,6 +166,7 @@ window.renderHistoryChart = function (bmiData) {
 let currentHistoryPage = 1;
 
 window.loadHistory = async function (page = 1, append = false) {
+
     const token = localStorage.getItem('token');
     if (!token) {
         if (window.showToast) window.showToast('warning', "กรุณาเข้าสู่ระบบก่อนดึงประวัติครับ");
@@ -172,116 +174,219 @@ window.loadHistory = async function (page = 1, append = false) {
     }
 
     currentHistoryPage = page;
-    const content = document.getElementById('history-content');
-    if (!content) return;
+    const bmiList = document.getElementById('bmi-list');
+    const foodList = document.getElementById('food-list');
+    const planList = document.getElementById('plan-list');
+    const skeleton = document.getElementById('history-skeleton');
+    const loadMoreContainer = document.getElementById('load-more-container');
+
+    if (!bmiList || !foodList || !planList) return;
 
     if (!append) {
-        content.innerHTML = `
-            <div style="margin-left: 20px;">
-                <span class="skeleton-box" style="width: 30%; margin-bottom: 10px; height: 1.5em;"></span><br>
-                <span class="skeleton-box" style="width: 100%; margin-bottom: 5px;"></span>
-                <span class="skeleton-box" style="width: 90%; margin-bottom: 5px;"></span>
-                <span class="skeleton-box" style="width: 95%; margin-bottom: 5px;"></span>
-            </div>`;
-        content.style.display = "block";
+        // Clear previous content and show skeleton
+        bmiList.innerHTML = '';
+        foodList.innerHTML = '';
+        planList.innerHTML = '';
+        if (skeleton) skeleton.style.display = 'block';
+        if (loadMoreContainer) loadMoreContainer.style.display = 'none';
     } else {
         const btn = document.getElementById('load-more-btn');
-        if (btn) btn.innerText = "กำลังโหลด...";
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<ion-icon name="refresh-outline" class="spin"></ion-icon> กำลังโหลด...';
+        }
     }
 
-    // Helper: Parse basic markdown from AI to HTML
+    // Helper: Parse basic markdown from AI to HTML - High-Readability Point-by-Point version
     const parseMarkdown = (text) => {
         if (!text) return "";
-        let htmlText = text.replace(/\\n/g, '<br>');
-        return htmlText
-            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-            .replace(/\*(.*?)\*/g, '<em>$1</em>')
-            .replace(/### (.*?)<br>/g, '<h4 style="color:#0ea5e9; margin-top:15px; margin-bottom:5px;">$1</h4>')
-            .replace(/<br>\* (.*?)/g, '<li style="margin-left: 20px; margin-bottom: 5px;">$1</li>')
-            .replace(/<br>- (.*?)/g, '<li style="margin-left: 20px; margin-bottom: 5px;">$1</li>');
+        
+        // 1. Clean up \n to actual newlines
+        let cleanText = text.replace(/\\n/g, '\n');
+        
+        // 2. Identify and handle Important Notices (ข้อสำคัญ)
+        cleanText = cleanText.replace(/(ข้อสำคัญ:.*?)(?=\n|$)/g, '<div style="background: rgba(245, 158, 11, 0.1); border-left: 4px solid #f59e0b; padding: 15px; margin-bottom: 20px; border-radius: 8px; color: #92400e;"><strong>⚠️ $1</strong></div>');
+
+        // 3. Detect and handle Headers (### Header)
+        cleanText = cleanText.replace(/### (.*?)(?:\n|$)/g, '<h4 style="color:var(--text-accent); margin-top:30px; margin-bottom:15px; font-size:1.3em; border-left:5px solid #10b981; padding-left:15px; font-weight:700;">$1</h4>');
+
+        // 4. Detect and handle Divide/Rule (---)
+        cleanText = cleanText.replace(/---/g, '<hr style="border:0; border-top:2px solid var(--divider); margin:25px 0; opacity:0.3;">');
+
+        // 5. Handle Bold/Italic
+        cleanText = cleanText.replace(/\*\*(.*?)\*\*/g, '<strong style="color:var(--text-accent); font-weight:700;">$1</strong>');
+        cleanText = cleanText.replace(/\*(.*?)\*/g, '<em style="color:#0ea5e9;">$1</em>');
+
+        // 6. AGGRESSIVE POINT SPLITTING: Split by numbered lines (1. , 2. ) or bullet lines (* , - )
+        const lines = cleanText.split('\n');
+        let html = '';
+        let currentGroup = [];
+
+        lines.forEach(line => {
+            const trimmed = line.trim();
+            if (!trimmed) return;
+
+            // Handle Numbered List Points
+            const numMatch = trimmed.match(/^(\d+)\.\s*(.*)/);
+            if (numMatch) {
+                const num = numMatch[1];
+                const content = numMatch[2];
+                html += `<div class="hc-point">
+                            <div class="hc-point-icon">${num}</div>
+                            <div class="hc-point-content">${content}</div>
+                         </div>`;
+                return;
+            }
+
+            // Handle Bullet List Points
+            const bulletMatch = trimmed.match(/^[\*\-]\s*(.*)/);
+            if (bulletMatch) {
+                const content = bulletMatch[1];
+                html += `<div class="hc-point">
+                            <div class="hc-point-icon" style="background: #38bdf8;"><ion-icon name="checkmark-outline"></ion-icon></div>
+                            <div class="hc-point-content">${content}</div>
+                         </div>`;
+                return;
+            }
+
+            // If it's a "header" or "notice" already processed, just add it.
+            if (trimmed.startsWith('<h4') || trimmed.startsWith('<div style="background:') || trimmed.startsWith('<hr')) {
+                html += line;
+                return;
+            }
+
+            // Generic Paragraph
+            html += `<p style="margin-bottom: 12px; color: var(--text-main); font-size: 1.05em; line-height: 1.8;">${trimmed}</p>`;
+        });
+
+        return html;
     };
+
+
 
     try {
         const response = await fetch(`/api/history?page=${page}`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
+        
+        if (skeleton) skeleton.style.display = 'none';
+
         if (response.ok) {
             const data = await response.json();
 
+            // Render Chart only on first load
             if (!append && window.renderHistoryChart) window.renderHistoryChart(data.bmi);
 
+            // 1. BMI History
             let bmiHtml = '';
-            data.bmi.forEach(b => {
-                bmiHtml += `<div style="background: rgba(255,255,255,0.7); padding: 15px; border-radius: 10px; border-left: 4px solid #38bdf8; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); cursor: pointer; transition: 0.3s; margin-bottom: 10px;" onmouseover="this.style.background='rgba(255,255,255,0.9)'" onmouseout="this.style.background='rgba(255,255,255,0.7)'">
-                            <div>
-                                <strong style="color: #475569; font-size: 0.9em;">📅 ${b.created_at}</strong>
-                                <div style="font-weight: bold; font-size: 1.1em; color: #0f172a; margin-top: 5px;">BMI: ${b.bmi}</div>
+            if (data.bmi && data.bmi.length > 0) {
+                data.bmi.forEach(b => {
+                    const statusClass = b.status.includes('ปกติ') ? 'sp-normal' : (b.status.includes('อ้วน') ? 'sp-danger' : 'sp-warning');
+                    bmiHtml += `
+                        <div class="history-item-card">
+                            <div class="hc-header">
+                                <span class="hc-title">BMI Record</span>
+                                <span class="hc-date"><ion-icon name="calendar-outline"></ion-icon> ${b.created_at}</span>
                             </div>
-                            <div style="background: ${b.status.includes('ปกติ') ? '#dcfce7' : '#fef3c7'}; color: ${b.status.includes('ปกติ') ? '#166534' : '#92400e'}; padding: 5px 10px; border-radius: 20px; font-size: 0.85em; font-weight: 600;">
-                                ${b.status}
+                            <div class="hc-stats">
+                                <div class="hc-stat-box"><strong>น้ำหนัก:</strong> ${b.weight} กก.</div>
+                                <div class="hc-stat-box"><strong>ส่วนสูง:</strong> ${b.height} ซม.</div>
+                                <div class="hc-stat-box" style="background: var(--text-accent); color: white;"><strong>BMI:</strong> ${b.bmi}</div>
+                            </div>
+                            <div style="margin-top: 15px;">
+                                <span class="status-pill ${statusClass}">${b.status}</span>
                             </div>
                         </div>`;
-            });
-
-            let foodHtml = '';
-            data.foods.forEach(f => {
-                foodHtml += `<details style="background: rgba(255,255,255,0.7); padding: 15px; border-radius: 10px; border-left: 4px solid #fb7185; box-shadow: 0 2px 5px rgba(0,0,0,0.05); cursor: pointer; margin-bottom: 15px;">
-                            <summary style="font-weight: bold; font-size: 1.1em; color: #0f172a; outline: none;">
-                                🍽️ ${f.food_name} <span style="font-size: 0.8em; color: #64748b; font-weight: normal; margin-left: 10px;">(${f.created_at})</span>
-                            </summary>
-                            <div style="font-size: 0.95em; color: #334155; margin-top: 15px; line-height: 1.6; background: rgba(0,0,0,0.03); padding: 15px; border-radius: 8px;">
-                                ${parseMarkdown(f.analysis)}
-                            </div>
-                        </details>`;
-            });
-
-            let planHtml = '';
-            data.plans.forEach(p => {
-                planHtml += `<details style="background: rgba(255,255,255,0.7); padding: 15px; border-radius: 12px; border-left: 5px solid #34d399; box-shadow: 0 4px 6px rgba(0,0,0,0.05); cursor: pointer; transition: transform 0.2s ease; margin-bottom: 15px;">
-                          <summary style="font-weight: 600; color: #1e293b; font-size: 1.05em; outline: none;">
-                              🤖 แผนสุขภาพประจำวันที่: ${p.created_at}
-                          </summary>
-                          <div style="line-height: 1.7; color: #475569; margin-top: 15px; padding-top: 15px; border-top: 1px dashed rgba(0,0,0,0.1);">
-                              ${parseMarkdown(p.plan_details)}
-                          </div>
-                         </details>`;
-            });
-
-            if (!append) {
-                let html = '';
-                html += `<h3 style="color: #0ea5e9; margin-bottom: 15px; border-bottom: 2px solid #0ea5e9; padding-bottom: 5px; display: inline-block;">ประวัติ BMI ล่าสุด</h3>`;
-                html += `<div id="bmi-list" style="margin-bottom: 25px;">${bmiHtml || '<div style="color: #64748b; font-style: italic;">ยังไม่มีประวัติ</div>'}</div>`;
-
-                html += `<h3 style="color: #f43f5e; margin-bottom: 15px; border-bottom: 2px solid #f43f5e; padding-bottom: 5px; display: inline-block;">การวิเคราะห์อาหารที่บันทึกไว้</h3>`;
-                html += `<div id="food-list" style="margin-bottom: 25px;">${foodHtml || '<div style="color: #64748b; font-style: italic;">ยังไม่มีประวัติ</div>'}</div>`;
-
-                html += `<h3 style="color: #10b981; margin-bottom: 15px; border-bottom: 2px solid #10b981; padding-bottom: 5px; display: inline-block;">แผนสุขภาพจาก AI ล่าสุด</h3>`;
-                html += `<div id="plan-list">${planHtml || '<div style="color: #64748b; font-style: italic;">ยังไม่มีประวัติ</div>'}</div>`;
-
-                html += `<div id="load-more-container" style="text-align: center; margin-top: 20px;"></div>`;
-                content.innerHTML = html;
-            } else {
-                if (bmiHtml) document.getElementById('bmi-list').innerHTML += bmiHtml;
-                if (foodHtml) document.getElementById('food-list').innerHTML += foodHtml;
-                if (planHtml) document.getElementById('plan-list').innerHTML += planHtml;
+                });
+            } else if (!append) {
+                bmiHtml = `<div class="empty-state"><ion-icon name="fitness-outline"></ion-icon><p>ยังไม่มีประวัติการคำนวณ BMI</p></div>`;
             }
 
-            const loadMoreContainer = document.getElementById('load-more-container');
+            // 2. Food Analysis
+            let foodHtml = '';
+            if (data.foods && data.foods.length > 0) {
+                data.foods.forEach(f => {
+                    foodHtml += `
+                        <div class="history-item-card">
+                            <div class="hc-header">
+                                <span class="hc-title">🍽️ ${f.food_name}</span>
+                                <span class="hc-date"><ion-icon name="time-outline"></ion-icon> ${f.created_at}</span>
+                            </div>
+                            <div class="history-card-body" style="margin-top: 10px; padding: 15px; background: rgba(0,0,0,0.03); border-radius: 12px; font-size: 0.95em;">
+                                ${parseMarkdown(f.analysis)}
+                            </div>
+                        </div>`;
+                });
+            } else if (!append) {
+                foodHtml = `<div class="empty-state"><ion-icon name="restaurant-outline"></ion-icon><p>ยังไม่มีประวัติการวิเคราะห์อาหาร</p></div>`;
+            }
+
+            // 3. AI Plans
+            let planHtml = '';
+            if (data.plans && data.plans.length > 0) {
+                data.plans.forEach(p => {
+                    // Pre-process for important notices
+                    let planContent = parseMarkdown(p.plan_details);
+                    planContent = planContent.replace(/(ข้อสำคัญ:.*?)(?=<br>|<\/p>|$)/g, '<div style="background: rgba(245, 158, 11, 0.1); border-left: 4px solid #f59e0b; padding: 12px; margin: 15px 0; border-radius: 4px; color: #92400e;"><strong>⚠️ $1</strong></div>');
+
+                    planHtml += `
+                        <div class="history-item-card" style="border-left: 6px solid #10b981; padding: 30px;">
+                            <div class="hc-header" style="margin-bottom: 20px;">
+                                <div style="display: flex; align-items: center; gap: 12px;">
+                                    <div style="background: #10b981; color: white; width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.5em;">
+                                        <ion-icon name="sparkles"></ion-icon>
+                                    </div>
+                                    <div>
+                                        <span class="hc-title" style="color: #10b981; font-size: 1.3em;">AI Health Plan Report</span>
+                                        <div class="hc-date" style="margin-top: 2px;">วิเคราะห์เมื่อ: ${p.created_at}</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="history-card-body" style="font-size: 1.05em; line-height: 1.9; color: var(--text-main);">
+                                ${planContent}
+                            </div>
+                        </div>`;
+                });
+            } else if (!append) {
+
+                planHtml = `<div class="empty-state"><ion-icon name="sparkles-outline"></ion-icon><p>ยังไม่มีแผนสุขภาพจาก AI</p></div>`;
+            }
+
+            // Append or Replace
+            if (append) {
+                bmiList.innerHTML += bmiHtml;
+                foodList.innerHTML += foodHtml;
+                planList.innerHTML += planHtml;
+            } else {
+                bmiList.innerHTML = bmiHtml;
+                foodList.innerHTML = foodHtml;
+                planList.innerHTML = planHtml;
+            }
+
+            // Handle Load More button
             if (loadMoreContainer) {
                 if (data.hasMore) {
-                    loadMoreContainer.innerHTML = `<button id="load-more-btn" onclick="window.loadHistory(${page + 1}, true)" style="background: #1e293b; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: 0.3s;" onmouseover="this.style.background='#334155'" onmouseout="this.style.background='#1e293b'">โหลดเพิ่มเติม 👇</button>`;
+                    loadMoreContainer.style.display = 'block';
+                    const btn = document.getElementById('load-more-btn');
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.innerHTML = 'โหลดข้อมูลเพิ่มเติม <ion-icon name="chevron-down-outline" style="margin-left: 5px;"></ion-icon>';
+                    }
                 } else {
-                    loadMoreContainer.innerHTML = `<div style="color: #64748b; font-size: 0.9em; font-style: italic;">-- หมดประวัติแล้ว --</div>`;
+                    loadMoreContainer.style.display = 'block';
+                    loadMoreContainer.innerHTML = `<div style="color: #64748b; font-size: 0.9em; font-style: italic; margin-top: 20px;">-- สิ้นสุดรายการประวัติ --</div>`;
                 }
             }
 
         } else {
-            if (!append) content.innerHTML = "<p style='color:red;'>ดึงข้อมูลประวัติไม่สำเร็จ</p>";
+            if (!append) bmiList.innerHTML = "<p style='color:red; text-align:center;'>ดึงข้อมูลประวัติไม่สำเร็จ</p>";
         }
     } catch (error) {
-        if (!append) content.innerHTML = "<p style='color:red;'>ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้</p>";
+        console.error("Error loading history:", error);
+        if (!append) bmiList.innerHTML = "<p style='color:red; text-align:center;'>ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้</p>";
     }
 }
+
 
 // ===================================
 // Ultimate UX Features (Quotes, Water, Streaks)

@@ -121,27 +121,62 @@
         <!-- View สำหรับคนที่ล็อกอินแล้ว (Dashboard) -->
         <div id="dashboard-view" style="display: none;">
             <section class="info-card" id="history-section">
-                <h1 style="margin-bottom: 20px;">ประวัติของคุณ (History)</h1>
+                <h1 style="margin-bottom: 10px;">รายการประวัติย้อนหลัง</h1>
+                <p style="color: #64748b; margin-bottom: 30px;">ติดตามความก้าวหน้าและการวิเคราะห์สุขภาพของคุณได้ที่นี่</p>
 
-                <div class="calculator-box" style="margin-bottom: 20px;">
-                    <p style="text-align: left; margin-bottom: 15px;">ดูประวัติการคำนวณ BMI, ประวัติการสแกนอาหาร,
-                        และแผนสุขภาพจาก AI ที่บันทึกไว้</p>
-                    <button onclick="loadHistory()" class="btn"
-                        style="width: auto; padding: 10px 20px;">โหลดประวัติข้อมูล</button>
+                <!-- Tabs Navigation -->
+                <div class="history-tabs">
+                    <button id="tab-btn-bmi" class="history-tab-btn active" onclick="switchTab('bmi')">
+                        <ion-icon name="fitness-outline"></ion-icon> ประวัติ BMI
+                    </button>
+                    <button id="tab-btn-food" class="history-tab-btn" onclick="switchTab('food')">
+                        <ion-icon name="restaurant-outline"></ion-icon> วิเคราะห์อาหาร
+                    </button>
+                    <button id="tab-btn-plan" class="history-tab-btn" onclick="switchTab('plan')">
+                        <ion-icon name="sparkles-outline"></ion-icon> แผนสุขภาพ AI
+                    </button>
                 </div>
 
-                <div id="chart-container"
-                    style="display:none; margin-bottom: 20px; background: var(--card-bg, rgba(255,255,255,0.8)); padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
-                    <h3 style="color: #0ea5e9; text-align: left; margin-bottom: 15px;">📈 กราฟแนวโน้มน้ำหนัก</h3>
-                    <canvas id="historyChart" style="max-height: 300px;"></canvas>
+                <!-- BMI Tab Content -->
+                <div id="bmi-tab" class="tab-content active">
+                    <div id="chart-container"
+                        style="display:none; margin-bottom: 30px; background: rgba(255,255,255,0.05); padding: 20px; border-radius: 20px; border: 1px solid var(--card-border);">
+                        <h3 style="color: #0ea5e9; text-align: left; margin-bottom: 15px; font-size: 1.1em;">
+                            📈 แนวโน้มน้ำหนักของคุณ
+                        </h3>
+                        <div style="height: 300px;">
+                            <canvas id="historyChart"></canvas>
+                        </div>
+                    </div>
+                    <div id="bmi-list"></div>
                 </div>
 
-                <div id="history-content"
-                    style="display:none; text-align: left; background: var(--card-bg, rgba(255,255,255,0.8)); padding: 25px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
-                    <!-- ข้อมูลประวัติจะแสดงที่นี่โดย Javascript -->
+                <!-- Food Tab Content -->
+                <div id="food-tab" class="tab-content">
+                    <div id="food-list"></div>
+                </div>
+
+                <!-- Plan Tab Content -->
+                <div id="plan-tab" class="tab-content">
+                    <div id="plan-list"></div>
+                </div>
+
+                <!-- Load More Button -->
+                <div id="load-more-container" style="text-align: center; margin-top: 30px; display: none;">
+                    <button id="load-more-btn" onclick="window.loadHistory(currentHistoryPage + 1, true)" class="btn" style="width: auto; padding: 12px 30px;">
+                        โหลดข้อมูลเพิ่มเติม <ion-icon name="chevron-down-outline" style="margin-left: 5px;"></ion-icon>
+                    </button>
+                </div>
+                
+                <!-- Skeleton Loader Template (Hidden by default) -->
+                <div id="history-skeleton" style="display: none;">
+                    <div class="history-item-card skeleton-loader" style="height: 100px; margin-bottom: 15px; border-radius: 20px;"></div>
+                    <div class="history-item-card skeleton-loader" style="height: 100px; margin-bottom: 15px; border-radius: 20px;"></div>
+                    <div class="history-item-card skeleton-loader" style="height: 100px; border-radius: 20px;"></div>
                 </div>
             </section>
         </div>
+
     </main>
 
     <!-- Auto-load history when on history page if logged in -->

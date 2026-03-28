@@ -1356,3 +1356,195 @@ header {
         font-size: 26px;
     }
 }
+
+/* =================================== */
+/* History Page Enhancements          */
+/* =================================== */
+
+.history-tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 25px;
+    border-bottom: 1px solid var(--divider);
+    padding-bottom: 15px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.history-tabs::-webkit-scrollbar {
+    display: none;
+}
+
+.history-tab-btn {
+    padding: 12px 24px;
+    border: none;
+    background: transparent;
+    color: var(--text-main);
+    font-weight: 600;
+    cursor: pointer;
+    border-radius: 12px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: inherit;
+    border: 1px solid transparent;
+}
+
+.history-tab-btn ion-icon {
+    font-size: 1.3em;
+}
+
+.history-tab-btn:hover {
+    background: rgba(14, 165, 233, 0.08);
+    color: var(--text-accent);
+    transform: translateY(-1px);
+}
+
+.history-tab-btn.active {
+    background: var(--text-accent);
+    color: #ffffff;
+    box-shadow: 0 8px 20px -6px rgba(14, 165, 233, 0.5);
+    border-color: rgba(255,255,255,0.1);
+}
+
+.tab-content {
+    display: none;
+    animation: historyFadeIn 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.tab-content.active {
+    display: block;
+}
+
+@keyframes historyFadeIn {
+    from { opacity: 0; transform: translateY(15px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* History Cards Modern */
+.history-item-card {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 20px;
+    padding: 24px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+    text-align: left;
+    backdrop-filter: blur(10px);
+}
+
+.history-item-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 25px rgba(0, 0, 0, 0.1);
+    border-color: var(--text-accent);
+}
+
+.hc-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.hc-date {
+    font-size: 0.85em;
+    color: #64748b;
+    font-weight: 500;
+}
+
+.hc-title {
+    font-size: 1.2em;
+    font-weight: 700;
+    color: var(--text-accent);
+}
+
+.hc-stats {
+    display: flex;
+    gap: 15px;
+    margin-top: 10px;
+    flex-wrap: wrap;
+}
+
+.hc-stat-box {
+    background: rgba(14, 165, 233, 0.1);
+    padding: 8px 15px;
+    border-radius: 12px;
+    font-size: 0.9em;
+}
+
+/* Status Badges */
+.status-pill {
+    padding: 6px 14px;
+    border-radius: 30px;
+    font-size: 0.85em;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.sp-normal { background: #dcfce7; color: #166534; }
+.sp-warning { background: #fef3c7; color: #92400e; }
+.sp-danger { background: #fee2e2; color: #991b1b; }
+
+.dark-mode .sp-normal { background: rgba(34, 197, 94, 0.2); color: #4ade80; }
+.dark-mode .sp-warning { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+.dark-mode .sp-danger { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+
+.empty-state {
+    padding: 50px 20px;
+    text-align: center;
+    color: #64748b;
+}
+
+.empty-state ion-icon {
+    font-size: 4em;
+    margin-bottom: 15px;
+    opacity: 0.5;
+}
+
+/* AI Plan Points Structure */
+.hc-point {
+    background: rgba(255, 255, 255, 0.5);
+    border: 1px solid rgba(16, 185, 129, 0.1);
+    border-radius: 12px;
+    padding: 15px 20px;
+    margin-bottom: 12px;
+    display: flex;
+    gap: 15px;
+    align-items: flex-start;
+    transition: all 0.2s ease;
+}
+
+.dark-mode .hc-point {
+    background: rgba(15, 23, 42, 0.4);
+    border-color: rgba(16, 185, 129, 0.05);
+}
+
+.hc-point:hover {
+    background: rgba(16, 185, 129, 0.05);
+    border-color: rgba(16, 185, 129, 0.3);
+    transform: translateX(5px);
+}
+
+.hc-point-icon {
+    background: #10b981;
+    color: white;
+    width: 28px;
+    height: 28px;
+    min-width: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9em;
+    font-weight: bold;
+}
+
+.hc-point-content {
+    flex: 1;
+}
+

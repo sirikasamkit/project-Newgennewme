@@ -74,3 +74,27 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 });
+
+window.switchTab = function (tabName) {
+    // Hide all tab contents
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.remove('active');
+    });
+
+    // Deactivate all tab buttons
+    document.querySelectorAll('.history-tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+
+    // Show selected tab content
+    const selectedTab = document.getElementById(`${tabName}-tab`);
+    if (selectedTab) selectedTab.classList.add('active');
+
+    // Activate selected tab button
+    const selectedBtn = document.getElementById(`tab-btn-${tabName}`);
+    if (selectedBtn) selectedBtn.classList.add('active');
+
+    // Play a subtle sound if available
+    if (window.playPremiumSound) window.playPremiumSound('pop');
+};
+
