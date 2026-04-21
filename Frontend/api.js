@@ -13,7 +13,10 @@ window.loadProfile = async function () {
             const data = await response.json();
             if (document.getElementById('profile-username')) document.getElementById('profile-username').value = data.username || '';
             if (document.getElementById('profile-preview') && data.profile_image) {
-                document.getElementById('profile-preview').src = data.profile_image;
+                const previewEl = document.getElementById('profile-preview');
+                previewEl.src = data.profile_image;
+                // Bug Fix: เก็บ Base64 ใน data-base64 ด้วย เพื่อให้ saveProfile() อ่านได้ถูกต้อง
+                previewEl.setAttribute('data-base64', data.profile_image);
             }
             if (document.getElementById('profile-age')) document.getElementById('profile-age').value = data.age || '';
             if (document.getElementById('profile-gender')) document.getElementById('profile-gender').value = data.gender || '';
@@ -31,21 +34,62 @@ window.loadProfile = async function () {
     }
 }
 
+// Helper: Compress image to Base64 (max 800px, quality 0.75)
+window.compressImageToBase64 = function (file, maxWidth = 800, quality = 0.75) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            const img = new Image();
+            img.onload = function () {
+                const canvas = document.createElement('canvas');
+                let w = img.width;
+                let h = img.height;
+                if (w > maxWidth) {
+                    h = Math.round(h * maxWidth / w);
+                    w = maxWidth;
+                }
+                canvas.width = w;
+                canvas.height = h;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, w, h);
+                const base64 = canvas.toDataURL('image/jpeg', quality);
+                resolve(base64);
+            };
+            img.onerror = reject;
+            img.src = e.target.result;
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+};
+
 window.saveProfile = async function () {
     const token = localStorage.getItem('token');
     const username = document.getElementById('profile-username').value;
-    let profile_image = document.getElementById('profile-preview').src;
 
-    // Don't save if it's just the placeholder URL
-    if (profile_image.includes('placeholder.com')) {
-        profile_image = null;
+    // Bug Fix: อ่านรูปจาก data-base64 attribute แทน .src ที่ browser อาจ resolve เป็น absolute URL
+    const previewEl = document.getElementById('profile-preview');
+    let profile_image = previewEl ? previewEl.getAttribute('data-base64') || null : null;
+
+    // Fallback: ถ้า data-base64 ไม่มี ให้ตรวจสอบ .src ว่าเป็น data URL จริงหรือไม่
+    if (!profile_image && previewEl) {
+        const src = previewEl.src || '';
+        if (src.startsWith('data:image/')) {
+            profile_image = src;
+        }
     }
+
     const age = document.getElementById('profile-age').value;
     const gender = document.getElementById('profile-gender').value;
     const height = document.getElementById('profile-height').value;
     const weight = document.getElementById('profile-weight').value;
     const goal_weight = document.getElementById('profile-goal').value;
     const activity = document.getElementById('profile-activity').value;
+
+    // Log ขนาดรูปที่จะ save
+    if (profile_image) {
+        console.log(`📸 Sending profile image size: ${(profile_image.length / 1024).toFixed(2)} KB`);
+    }
 
     try {
         const response = await fetch('/api/profile', {
@@ -62,7 +106,7 @@ window.saveProfile = async function () {
             // Update UI globally
             if (window.checkLoginStatus) window.checkLoginStatus();
 
-            if (window.showToast) window.showToast('success', 'บันทึกโปรไฟล์เรียบร้อยแล้ว');
+            if (window.showToast) window.showToast('success', 'บันทึกโปรไฟล์เรียบร้อยแล้ว ✅');
             if (typeof updateGoalProgress === 'function') {
                 updateGoalProgress(weight, goal_weight);
             }
@@ -443,14 +487,17 @@ window.renderWaterTracker = function () {
 
 window.addWater = function () {
     let count = window.getWaterCount();
-    if (count < 8) {
-        localStorage.setItem(window.getWaterKey(), count + 1);
-        window.renderWaterTracker();
-        if (window.showToast) window.showToast('success', 'ดื่มน้ำเพิ่ม 1 แก้ว เก่งมาก! 💧');
+    if (count >= 8) {
+        if (window.showToast) window.showToast('info', 'คุณดื่มน้ำถึงเป้าหมาย 8 แก้วแล้ววันนี้! 🎉');
+        return;
+    }
+    const newCount = count + 1;
+    localStorage.setItem(window.getWaterKey(), newCount);
+    window.renderWaterTracker();
+    if (newCount >= 8) {
+        if (window.showToast) window.showToast('success', 'ยอดเยี่ยม! ครบ 8 แก้วแล้ว 🏆💧');
     } else {
-        localStorage.setItem(window.getWaterKey(), count + 1);
-        window.renderWaterTracker();
-        if (window.showToast) window.showToast('info', 'คุณดื่มน้ำถึงเป้าหมายแล้ววันนี้! 🎉');
+        if (window.showToast) window.showToast('success', `ดื่มน้ำแก้วที่ ${newCount} เก่งมาก! 💧`);
     }
 }
 
@@ -545,8 +592,18 @@ window.renderWeeklySnapshots = function () {
     if (!waterCtx || !sleepCtx) return;
 
     const days = ['จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.', 'อา.'];
-    const waterData = [6, 8, 5, 7, 8, 4, 6];
-    const sleepData = [7, 6.5, 8, 7, 6, 9, 8.5];
+
+    // ดึงข้อมูลจริงจาก localStorage สำหรับ 7 วันย้อนหลัง
+    const waterData = [];
+    const sleepData = [];
+    const today = new Date();
+    for (let i = 6; i >= 0; i--) {
+        const d = new Date(today);
+        d.setDate(today.getDate() - i);
+        const dateKey = d.toLocaleDateString('en-CA'); // YYYY-MM-DD
+        waterData.push(parseInt(localStorage.getItem(`water_intake_${dateKey}`)) || 0);
+        sleepData.push(parseFloat(localStorage.getItem(`sleep_${dateKey}`)) || 0);
+    }
 
     if (weeklyWaterChartInstance) weeklyWaterChartInstance.destroy();
     if (weeklySleepChartInstance) weeklySleepChartInstance.destroy();
@@ -562,7 +619,7 @@ window.renderWeeklySnapshots = function () {
         },
         options: {
             responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
-            scales: { x: { ticks: { color: color, font: { size: 10 } }, grid: { display: false } }, y: { ticks: { color: color, font: { size: 10 } }, beginAtZero: true } }
+            scales: { x: { ticks: { color: color, font: { size: 10 } }, grid: { display: false } }, y: { ticks: { color: color, font: { size: 10 } }, beginAtZero: true, max: 8 } }
         }
     });
 
@@ -574,7 +631,7 @@ window.renderWeeklySnapshots = function () {
         },
         options: {
             responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
-            scales: { x: { ticks: { color: color, font: { size: 10 } }, grid: { display: false } }, y: { ticks: { color: color, font: { size: 10 } }, beginAtZero: true } }
+            scales: { x: { ticks: { color: color, font: { size: 10 } }, grid: { display: false } }, y: { ticks: { color: color, font: { size: 10 } }, beginAtZero: true, max: 12 } }
         }
     });
 }

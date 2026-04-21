@@ -113,32 +113,34 @@ window.calculateBMI = async function () {
 }
 
 window.calculateBMIFromProfile = async function () {
-    const weight = document.getElementById('profile-weight').value;
-    const height = document.getElementById('profile-height').value;
+    const weight = parseFloat(document.getElementById('profile-weight').value);
+    const height = parseFloat(document.getElementById('profile-height').value);
     const activity = document.getElementById('profile-activity').value || 'general';
 
-    if (weight > 0 && height > 0) {
-        const bmi = (weight / ((height / 100) ** 2)).toFixed(2);
-        const status = window.getBMIStatus(bmi, activity);
-
-        document.getElementById('bmi-value').innerText = bmi;
-        document.getElementById('bmi-status').innerText = status;
-
-        const label = document.getElementById('bmi-label-text');
-        if (label) {
-            label.innerText = activity === 'bodybuilder' ? "ค่า BMI (หมวดนักกล้าม) คือ:" : "ค่า BMI ของคุณคือ:";
-        }
-
-        document.getElementById('result-area').style.display = "block";
-
-        const resultArea = document.getElementById('result-area');
-        const oldBox = document.getElementById('ai-plan');
-        if (oldBox) oldBox.remove();
-
-        window.generateAiPlan(bmi, weight, height, status, activity, resultArea);
-    } else {
+    // Bug Fix: validate ค่าก่อน — ต้องเป็นตัวเลขบวกที่สมเหตุสมผล
+    if (!weight || !height || weight <= 0 || height <= 0 || weight > 500 || height > 300) {
         if (window.showToast) window.showToast('warning', 'กรุณากรอกน้ำหนักและส่วนสูงในโปรไฟล์ และกดบันทึกโปรไฟล์ก่อนครับ');
+        return;
     }
+
+    const bmi = (weight / ((height / 100) ** 2)).toFixed(2);
+    const status = window.getBMIStatus(bmi, activity);
+
+    document.getElementById('bmi-value').innerText = bmi;
+    document.getElementById('bmi-status').innerText = status;
+
+    const label = document.getElementById('bmi-label-text');
+    if (label) {
+        label.innerText = activity === 'bodybuilder' ? "ค่า BMI (หมวดนักกล้าม) คือ:" : "ค่า BMI ของคุณคือ:";
+    }
+
+    document.getElementById('result-area').style.display = "block";
+
+    const resultArea = document.getElementById('result-area');
+    const oldBox = document.getElementById('ai-plan');
+    if (oldBox) oldBox.remove();
+
+    window.generateAiPlan(bmi, weight, height, status, activity, resultArea);
 }
 
 window.formatAiText = function (text) {
@@ -258,8 +260,8 @@ window.captureImage = function () {
     canvas.height = video.videoHeight;
     const ctx = canvas.getContext('2d');
 
-    ctx.translate(canvas.width, 0);
-    ctx.scale(-1, 1);
+    // Bug Fix: ลบ ctx.scale(-1,1) ออก เพราะ video ถูก mirror ด้วย CSS transform:scaleX(-1) แล้ว
+    // ถ้า mirror ซ้ำใน canvas จะทำให้รูปที่ได้กลับด้านจากที่เห็นใน preview
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
     canvas.toBlob((blob) => {
@@ -320,11 +322,40 @@ window.analyzeFoodImage = async function () {
         if (!response.ok) throw new Error(data.error || "AI Error");
 
         const analysisText = data.analysis;
-        contentArea.innerHTML = analysisText.replace(/\n/g, '<br>');
+        // Use parseMarkdown if available in api.js scope (it's defined inside loadHistory)
+        // Use a local formatter here for consistent display
+        const formatAnalysis = (text) => {
+            if (!text) return '';
+            let html = text
+                .replace(/\*\*(.*?)\*\*/g, '<strong style="color:var(--text-accent);font-weight:700;">$1</strong>')
+                .replace(/\*(.*?)\*/g, '<em style="color:#0ea5e9;">$1</em>')
+                .replace(/### (.*?)(?:\n|$)/g, '<h4 style="color:#10b981;margin:20px 0 10px;border-left:4px solid #10b981;padding-left:10px;">$1</h4>')
+                .replace(/---/g, '<hr style="border:0;border-top:1px solid rgba(0,0,0,0.1);margin:15px 0;">');
+            const lines = html.split('\n');
+            let result = '';
+            lines.forEach(line => {
+                const trimmed = line.trim();
+                if (!trimmed) return;
+                const numM = trimmed.match(/^(\d+)\.\s*(.*)/);
+                if (numM) {
+                    result += `<div style="display:flex;gap:10px;margin-bottom:8px;align-items:flex-start;"><div style="background:#0ea5e9;color:white;width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:0.8em;font-weight:bold;flex-shrink:0;">${numM[1]}</div><div>${numM[2]}</div></div>`;
+                    return;
+                }
+                const bulM = trimmed.match(/^[\*\-]\s*(.*)/);
+                if (bulM) {
+                    result += `<div style="display:flex;gap:8px;margin-bottom:6px;"><span style="color:#38bdf8;font-size:1.2em;line-height:1;">✓</span><div>${bulM[1]}</div></div>`;
+                    return;
+                }
+                if (trimmed.startsWith('<')) { result += line; return; }
+                result += `<p style="margin-bottom:8px;line-height:1.7;">${trimmed}</p>`;
+            });
+            return result;
+        };
+        contentArea.innerHTML = formatAnalysis(analysisText);
 
-        const proteinMatch = analysisText.match(/(?:protein|โปรตีน).*?(\d+)\s*(?:g|กรัม)/i);
-        const carbMatch = analysisText.match(/(?:carb|คาร์บ|^คาร์โบไฮเดรต).*?(\d+)\s*(?:g|กรัม)/i);
-        const fatMatch = analysisText.match(/(?:fat|ไขมัน).*?(\d+)\s*(?:g|กรัม)/i);
+        const proteinMatch = analysisText.match(/(?:protein|โปรตีน)[^\d]*(\d+)\s*(?:g|กรัม)/i);
+        const carbMatch = analysisText.match(/(?:carb(?:ohydrate)?s?|คาร์โบไฮเดรต|คาร์บ)[^\d]*(\d+)\s*(?:g|กรัม)/i);
+        const fatMatch = analysisText.match(/(?:fat|ไขมัน)[^\d]*(\d+)\s*(?:g|กรัม)/i);
 
         let p = proteinMatch ? parseInt(proteinMatch[1]) : 0;
         let c = carbMatch ? parseInt(carbMatch[1]) : 0;
@@ -425,9 +456,12 @@ window.sendChatMessage = async function () {
     const text = input.value.trim();
     if (!text) return;
 
+    // Bug Fix: Sanitize user input ป้องกัน XSS
+    const sanitize = (str) => str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
     msgContainer.innerHTML += `
         <div class="chat-msg user-msg">
-            ${text}
+            ${sanitize(text)}
         </div>
     `;
     input.value = '';
@@ -449,17 +483,28 @@ window.sendChatMessage = async function () {
         });
         const data = await response.json();
 
-        document.getElementById(thinkingId).remove();
+        const thinkingEl = document.getElementById(thinkingId);
+        if (thinkingEl) thinkingEl.remove();
 
-        msgContainer.innerHTML += `
-            <div class="chat-msg ai-msg">
-                ${window.formatAiText(data.reply)}
-            </div>
-        `;
+        // Bug Fix: ตรวจสอบ response.ok ก่อน render
+        if (!response.ok) {
+            msgContainer.innerHTML += `
+                <div class="chat-msg ai-msg" style="color: #ef4444;">
+                    ⚠️ ${sanitize(data.error || 'เกิดข้อผิดพลาด กรุณาลองใหม่')}
+                </div>
+            `;
+        } else {
+            msgContainer.innerHTML += `
+                <div class="chat-msg ai-msg">
+                    ${window.formatAiText(data.reply)}
+                </div>
+            `;
+        }
         msgContainer.scrollTop = msgContainer.scrollHeight;
         if (window.playPremiumSound) window.playPremiumSound('confirm');
     } catch (e) {
-        document.getElementById(thinkingId).innerText = "ขออภัยครับ เกิดข้อผิดพลาดในการเชื่อมต่อ";
+        const thinkingEl = document.getElementById(thinkingId);
+        if (thinkingEl) thinkingEl.innerText = "ขออภัยครับ เกิดข้อผิดพลาดในการเชื่อมต่อ";
     }
 }
 

@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>New gen new me</title>
+  <title>ติดต่อเรา - NeWGen NewME</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
@@ -28,8 +28,8 @@
       <a href="contact.html">Contact</a>
       <a href="profile.html" id="nav-profile-btn"
         style="display:none; align-items: center; gap: 8px; color: #10b981; font-weight: bold; text-decoration: none;">
-        <img id="nav-profile-pic" src="https://via.placeholder.com/30"
-          style="width: 30px; height: 30px; border-radius: 50%; object-fit: cover; border: 1px solid #10b981;">
+        <img id="nav-profile-pic" src="" alt="Profile"
+          style="width: 30px; height: 30px; border-radius: 50%; object-fit: cover; border: 1px solid #10b981; background: #e2e8f0;">
         Profile
       </a>
       <a href="history.html" id="nav-history-btn" style="display:none; color: #0ea5e9; font-weight: bold;">History</a>
@@ -62,7 +62,7 @@
         </div>
         <div class="remember-forgot">
           <label><input type="checkbox"> remember me</label>
-          <a href="#">Forgot Password?</a>
+          <a href="#" onclick="forgotPassword(event)">Forgot Password?</a>
         </div>
         <button type="submit" id="login-btn" class="btn">Login</button>
         <div class="login-register">
@@ -75,18 +75,18 @@
       <h2>Registration</h2>
       <form action="#">
         <div class="input-box">
-          <span class="icon"><ion-icon name="person"></ion-icon></ion-icon></span>
-          <input type="text" required>
+          <span class="icon"><ion-icon name="person"></ion-icon></span>
+          <input type="text" id="reg-username" required>
           <label>Username</label>
         </div>
         <div class="input-box">
           <span class="icon"><ion-icon name="mail"></ion-icon></span>
-          <input type="email" required>
+          <input type="email" id="reg-email" required>
           <label>Email</label>
         </div>
         <div class="input-box">
           <span class="icon"><ion-icon name="lock-closed"></ion-icon></span>
-          <input type="password" required>
+          <input type="password" id="reg-password" required>
           <label>Password</label>
         </div>
         <div class="remember-forgot">
@@ -149,7 +149,7 @@
         <h3>Found a bug?</h3>
         <p>หากพบปัญหาทางเทคนิค สามารถแจ้งทีมพัฒนาได้ทันที</p>
       </div>
-      <button class="btn-report" onclick="alert('ขอบคุณที่แจ้งปัญหา! ทีมงานจะรีบตรวจสอบครับ')">แจ้งปัญหาเว็บ</button>
+      <button class="btn-report" id="btn-report-bug">แจ้ปัญหาเว็บ</button>
     </div>
   </section>
 
@@ -160,6 +160,51 @@
   <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
   <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
 
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const btn = document.getElementById('btn-report-bug');
+      if (!btn) return;
+      btn.addEventListener('click', async () => {
+        const result = await Swal.fire({
+          title: '\u0e41\u0e08\u0e49\u0e1b\u0e31\u0e0d\u0e2b\u0e32\u0e40\u0e27\u0e47\u0e1a',
+          html: '<input type="email" id="report-email" class="swal2-input" placeholder="\u0e2d\u0e35\u0e40\u0e21\u0e25\u0e02\u0e2d\u0e07\u0e04\u0e38\u0e13 (optional)">' +
+                '<textarea id="report-msg" class="swal2-textarea" placeholder="\u0e2d\u0e18\u0e34\u0e1a\u0e32\u0e22\u0e1b\u0e31\u0e0d\u0e2b\u0e32\u0e17\u0e35\u0e48\u0e1e\u0e1a..." rows="4"></textarea>',
+          confirmButtonText: '\u0e2a\u0e48\u0e07\u0e23\u0e32\u0e22\u0e07\u0e32\u0e19',
+          cancelButtonText: '\u0e22\u0e01\u0e40\u0e25\u0e34\u0e01',
+          showCancelButton: true,
+          icon: 'question',
+          preConfirm: () => {
+            const msg = document.getElementById('report-msg').value;
+            if (!msg || msg.trim().length < 5) {
+              return Swal.showValidationMessage('\u0e01\u0e23\u0e38\u0e13\u0e32\u0e2d\u0e18\u0e34\u0e1a\u0e32\u0e22\u0e1b\u0e31\u0e0d\u0e2b\u0e32\u0e17\u0e35\u0e48\u0e1e\u0e1a (\u0e2d\u0e22\u0e48\u0e32\u0e07\u0e19\u0e49\u0e2d\u0e22 5 \u0e15\u0e31\u0e27\u0e2d\u0e31\u0e01\u0e29\u0e23)');
+            }
+            return {
+              email: document.getElementById('report-email').value,
+              message: msg.trim()
+            };
+          }
+        });
+
+        if (result.isConfirmed && result.value) {
+          try {
+            const res = await fetch('/api/report', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(result.value)
+            });
+            const data = await res.json();
+            if (res.ok) {
+              Swal.fire({ icon: 'success', title: '\u0e23\u0e31\u0e1a\u0e23\u0e32\u0e22\u0e07\u0e32\u0e19\u0e41\u0e25\u0e49\u0e27! \u0e02\u0e2d\u0e1a\u0e04\u0e38\u0e13\u0e04\u0e23\u0e31\u0e1a \ud83d\ude4f', text: data.message, timer: 3000, showConfirmButton: false });
+            } else {
+              Swal.fire({ icon: 'error', title: '\u0e40\u0e01\u0e34\u0e14\u0e02\u0e49\u0e2d\u0e1c\u0e34\u0e14\u0e1e\u0e25\u0e32\u0e14', text: data.error || '\u0e44\u0e21\u0e48\u0e2a\u0e32\u0e21\u0e32\u0e23\u0e16\u0e2a\u0e48\u0e07\u0e23\u0e32\u0e22\u0e07\u0e32\u0e19\u0e44\u0e14\u0e49' });
+            }
+          } catch (e) {
+            Swal.fire({ icon: 'error', title: '\u0e44\u0e21\u0e48\u0e2a\u0e32\u0e21\u0e32\u0e23\u0e16\u0e40\u0e0a\u0e37\u0e48\u0e2d\u0e21\u0e15\u0e48\u0e2d Server', text: '\u0e01\u0e23\u0e38\u0e13\u0e32\u0e15\u0e23\u0e27\u0e08\u0e2a\u0e2d\u0e1a\u0e01\u0e32\u0e23\u0e40\u0e0a\u0e37\u0e48\u0e2d\u0e21\u0e15\u0e48\u0e2d\u0e2d\u0e34\u0e19\u0e40\u0e15\u0e2d\u0e23\u0e4c\u0e40\u0e19\u0e47\u0e15' });
+          }
+        }
+      });
+    });
+  </script>
 </body>
 
 </html>

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'newgen-cache-v10';
+const CACHE_NAME = 'newgen-cache-v12'; // Bumped: bug fixes applied 2026-04-01
 const urlsToCache = [
     '/',
     '/index.html',

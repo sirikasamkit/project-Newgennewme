@@ -4,7 +4,13 @@
 
 window.checkLoginStatus = function () {
     const token = localStorage.getItem('token');
-    const user = JSON.parse(localStorage.getItem('user'));
+    // Bug fix: Wrap JSON.parse in try/catch — prevents blank page if localStorage is corrupted
+    let user = null;
+    try {
+        user = JSON.parse(localStorage.getItem('user'));
+    } catch (e) {
+        localStorage.removeItem('user');
+    }
     const is_admin = localStorage.getItem('is_admin');
 
     const guestView = document.getElementById('guest-view');

@@ -57,6 +57,14 @@
             border-radius: 10px;
             overflow: hidden;
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+            min-width: 600px;
+        }
+
+        .table-responsive {
+            width: 100%;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            border-radius: 10px;
         }
 
         th,
@@ -101,8 +109,8 @@
             <a href="index.html">Home</a>
             <a href="profile.html" id="nav-profile-btn"
                 style="display:none; align-items: center; gap: 8px; color: #10b981; font-weight: bold; text-decoration: none;">
-                <img id="nav-profile-pic" src="https://via.placeholder.com/30"
-                    style="width: 30px; height: 30px; border-radius: 50%; object-fit: cover; border: 1px solid #10b981;">
+                <img id="nav-profile-pic" src="" alt="Profile"
+                    style="width: 30px; height: 30px; border-radius: 50%; object-fit: cover; border: 1px solid #10b981; background: #e2e8f0;">
                 Profile
             </a>
             <a href="history.html" id="nav-history-btn"
@@ -135,21 +143,23 @@
         </div>
 
         <h2 style="color: #162938; margin-bottom: 15px;">User Management</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Username</th>
-                    <th>Email</th>
-                    <th>Role</th>
-                    <th>Registered At</th>
-                    <th>Action</th>
-                </tr>
-            </thead>
-            <tbody id="user-table-body">
-                <!-- Users will go here -->
-            </tbody>
-        </table>
+        <div class="table-responsive">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Username</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th>Registered At</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="user-table-body">
+                    <!-- Users will go here -->
+                </tbody>
+            </table>
+        </div>
     </div>
 
     <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
