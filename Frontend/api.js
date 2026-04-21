@@ -12,12 +12,6 @@ window.loadProfile = async function () {
         if (response.ok) {
             const data = await response.json();
             if (document.getElementById('profile-username')) document.getElementById('profile-username').value = data.username || '';
-            if (document.getElementById('profile-preview') && data.profile_image) {
-                const previewEl = document.getElementById('profile-preview');
-                previewEl.src = data.profile_image;
-                // Bug Fix: เก็บ Base64 ใน data-base64 ด้วย เพื่อให้ saveProfile() อ่านได้ถูกต้อง
-                previewEl.setAttribute('data-base64', data.profile_image);
-            }
             if (document.getElementById('profile-age')) document.getElementById('profile-age').value = data.age || '';
             if (document.getElementById('profile-gender')) document.getElementById('profile-gender').value = data.gender || '';
             if (document.getElementById('profile-height')) document.getElementById('profile-height').value = data.height || '';
@@ -27,6 +21,20 @@ window.loadProfile = async function () {
 
             if (typeof updateGoalProgress === 'function') {
                 updateGoalProgress(data.weight, data.goal_weight);
+            }
+
+            // \u0e42\u0e2b\u0e25\u0e14\u0e23\u0e39\u0e1b\u0e42\u0e1b\u0e23\u0e44\u0e1f\u0e25\u0e4c\u0e41\u0e22\u0e01\u0e15\u0e48\u0e32\u0e07\u0e2b\u0e32\u0e01 (\u0e40\u0e1e\u0e37\u0e48\u0e2d\u0e44\u0e21\u0e48\u0e43\u0e2b\u0e49 Base64 \u0e43\u0e2b\u0e0d\u0e48\u0e15\u0e34\u0e14\u0e04\u0e49\u0e32\u0e07\u0e17\u0e38\u0e01 API call)
+            const previewEl = document.getElementById('profile-preview');
+            if (previewEl) {
+                fetch('/api/profile/image', { headers: { 'Authorization': `Bearer ${token}` } })
+                    .then(r => r.json())
+                    .then(imgData => {
+                        if (imgData.profile_image) {
+                            previewEl.src = imgData.profile_image;
+                            previewEl.setAttribute('data-base64', imgData.profile_image);
+                        }
+                    })
+                    .catch(() => {});
             }
         }
     } catch (error) {
@@ -113,11 +121,16 @@ window.saveProfile = async function () {
         } else {
             const errData = await response.json().catch(() => ({}));
             console.error('Server error saving profile:', response.status, errData);
-            if (window.showToast) window.showToast('error', `เกิดข้อผิดพลาด: ${errData.error || 'เซิร์ฟเวอร์ปฏิเสธการบันทึก'}`);
+            // Auto-logout ถ้า token หมดอายุ/invalid
+            if (response.status === 401 || response.status === 403) {
+                if (window.handleAuthError) window.handleAuthError(response.status);
+            } else {
+                if (window.showToast) window.showToast('error', `เกิดข้อผิดพลาด: ${errData.error || 'เซิร์ฟเวอร์ปฏิเสธการบันทึก'}`);
+            }
         }
     } catch (error) {
         console.error('Fetch error saving profile:', error);
-        if (window.showToast) window.showToast('error', 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ (อาจเป็นเพราะไฟล์ใหญ่เกินไป หรือเซิร์ฟเวอร์ค้าง)');
+        if (window.showToast) window.showToast('error', 'ไม่สามารถเชื่อมต่อได้ (ไฟล์อาจใหญ่เกินไปหรือเซิร์ฟเวอร์ค้าง)');
     }
 }
 
@@ -327,7 +340,7 @@ window.loadHistory = async function (page = 1, append = false) {
                 data.bmi.forEach(b => {
                     const statusClass = b.status.includes('ปกติ') ? 'sp-normal' : (b.status.includes('อ้วน') ? 'sp-danger' : 'sp-warning');
                     bmiHtml += `
-                        <div class="history-item-card">
+                        <div class="history-item-card" id="bmi-card-${b.id}">
                             <div class="hc-header">
                                 <span class="hc-title">BMI Record</span>
                                 <span class="hc-date"><ion-icon name="calendar-outline"></ion-icon> ${b.created_at}</span>
@@ -335,12 +348,14 @@ window.loadHistory = async function (page = 1, append = false) {
                             <div class="hc-stats">
                                 <div class="hc-stat-box"><strong>น้ำหนัก:</strong> ${b.weight} กก.</div>
                                 <div class="hc-stat-box"><strong>ส่วนสูง:</strong> ${b.height} ซม.</div>
-                                <div class="hc-stat-box" style="background: var(--text-accent); color: white;"><strong>BMI:</strong> ${b.bmi}</div>
+                                <div class="hc-stat-box" style="background: #0ea5e9; color: white;"><strong>BMI:</strong> ${b.bmi}</div>
                             </div>
-                            <div style="margin-top: 15px;">
+                            <div style="margin-top: 15px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
                                 <span class="status-pill ${statusClass}">${b.status}</span>
+                                <button onclick="deleteHistoryItem('bmi', ${b.id})" style="background: none; border: 1px solid #ef4444; color: #ef4444; padding: 4px 12px; border-radius: 8px; cursor: pointer; font-size: 0.8em; transition: all 0.2s;" onmouseover="this.style.background='#ef4444';this.style.color='white'" onmouseout="this.style.background='none';this.style.color='#ef4444'">♻️ ลบ</button>
                             </div>
                         </div>`;
+
                 });
             } else if (!append) {
                 bmiHtml = `<div class="empty-state"><ion-icon name="fitness-outline"></ion-icon><p>ยังไม่มีประวัติการคำนวณ BMI</p></div>`;
@@ -351,13 +366,16 @@ window.loadHistory = async function (page = 1, append = false) {
             if (data.foods && data.foods.length > 0) {
                 data.foods.forEach(f => {
                     foodHtml += `
-                        <div class="history-item-card">
+                        <div class="history-item-card" id="food-card-${f.id}">
                             <div class="hc-header">
                                 <span class="hc-title">🍽️ ${f.food_name}</span>
                                 <span class="hc-date"><ion-icon name="time-outline"></ion-icon> ${f.created_at}</span>
                             </div>
                             <div class="history-card-body" style="margin-top: 10px; padding: 15px; background: rgba(0,0,0,0.03); border-radius: 12px; font-size: 0.95em;">
                                 ${parseMarkdown(f.analysis)}
+                            </div>
+                            <div style="text-align: right; margin-top: 10px;">
+                                <button onclick="deleteHistoryItem('food', ${f.id})" style="background: none; border: 1px solid #ef4444; color: #ef4444; padding: 4px 12px; border-radius: 8px; cursor: pointer; font-size: 0.8em; transition: all 0.2s;" onmouseover="this.style.background='#ef4444';this.style.color='white'" onmouseout="this.style.background='none';this.style.color='#ef4444'">♻️ ลบ</button>
                             </div>
                         </div>`;
                 });
@@ -369,12 +387,11 @@ window.loadHistory = async function (page = 1, append = false) {
             let planHtml = '';
             if (data.plans && data.plans.length > 0) {
                 data.plans.forEach(p => {
-                    // Pre-process for important notices
                     let planContent = parseMarkdown(p.plan_details);
                     planContent = planContent.replace(/(ข้อสำคัญ:.*?)(?=<br>|<\/p>|$)/g, '<div style="background: rgba(245, 158, 11, 0.1); border-left: 4px solid #f59e0b; padding: 12px; margin: 15px 0; border-radius: 4px; color: #92400e;"><strong>⚠️ $1</strong></div>');
 
                     planHtml += `
-                        <div class="history-item-card" style="border-left: 6px solid #10b981; padding: 30px;">
+                        <div class="history-item-card" id="plan-card-${p.id}" style="border-left: 6px solid #10b981; padding: 30px;">
                             <div class="hc-header" style="margin-bottom: 20px;">
                                 <div style="display: flex; align-items: center; gap: 12px;">
                                     <div style="background: #10b981; color: white; width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.5em;">
@@ -385,6 +402,7 @@ window.loadHistory = async function (page = 1, append = false) {
                                         <div class="hc-date" style="margin-top: 2px;">วิเคราะห์เมื่อ: ${p.created_at}</div>
                                     </div>
                                 </div>
+                                <button onclick="deleteHistoryItem('plan', ${p.id})" style="background: none; border: 1px solid #ef4444; color: #ef4444; padding: 4px 12px; border-radius: 8px; cursor: pointer; font-size: 0.8em; transition: all 0.2s; align-self: flex-start;" onmouseover="this.style.background='#ef4444';this.style.color='white'" onmouseout="this.style.background='none';this.style.color='#ef4444'">♻️ ลบ</button>
                             </div>
                             <div class="history-card-body" style="font-size: 1.05em; line-height: 1.9; color: var(--text-main);">
                                 ${planContent}
@@ -431,6 +449,50 @@ window.loadHistory = async function (page = 1, append = false) {
     }
 }
 
+// ===================================
+// Delete History Item
+// ===================================
+window.deleteHistoryItem = async function (type, id) {
+    const confirmResult = await Swal.fire({
+        title: '\u0e25\u0e1a\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23\u0e19\u0e35\u0e49?',
+        text: '\u0e04\u0e38\u0e13\u0e44\u0e21\u0e48\u0e2a\u0e32\u0e21\u0e32\u0e23\u0e16\u0e2d\u0e31\u0e19\u0e14\u0e39\u0e01\u0e25\u0e31\u0e1a\u0e44\u0e14\u0e49\u0e2b\u0e25\u0e31\u0e07\u0e08\u0e32\u0e01\u0e25\u0e1a\u0e41\u0e25\u0e49\u0e27',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#64748b',
+        confirmButtonText: '\u0e25\u0e1a\u0e40\u0e25\u0e22',
+        cancelButtonText: '\u0e22\u0e01\u0e40\u0e25\u0e34\u0e01'
+    });
+    if (!confirmResult.isConfirmed) return;
+
+    const token = localStorage.getItem('token');
+    const endpointMap = { bmi: 'bmi', food: 'food', plan: 'plan' };
+    const endpoint = endpointMap[type];
+    if (!endpoint) return;
+
+    try {
+        const res = await fetch(`/api/history/${endpoint}/${id}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+            // \u0e25\u0e1a card \u0e2d\u0e2d\u0e01\u0e08\u0e32\u0e01 DOM \u0e2d\u0e22\u0e48\u0e32\u0e07 smooth
+            const card = document.getElementById(`${type}-card-${id}`);
+            if (card) {
+                card.style.transition = 'all 0.3s ease';
+                card.style.opacity = '0';
+                card.style.transform = 'translateX(-20px)';
+                setTimeout(() => card.remove(), 300);
+            }
+            if (window.showToast) window.showToast('success', '\u0e25\u0e1a\u0e40\u0e23\u0e35\u0e22\u0e1a\u0e23\u0e49\u0e2d\u0e22\u0e41\u0e25\u0e49\u0e27 \u267b\ufe0f');
+        } else {
+            const err = await res.json().catch(() => ({}));
+            if (window.showToast) window.showToast('error', err.error || '\u0e25\u0e1a\u0e44\u0e21\u0e48\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08');
+        }
+    } catch (e) {
+        if (window.showToast) window.showToast('error', '\u0e44\u0e21\u0e48\u0e2a\u0e32\u0e21\u0e32\u0e23\u0e16\u0e40\u0e0a\u0e37\u0e48\u0e2d\u0e21\u0e15\u0e48\u0e2d\u0e44\u0e14\u0e49');
+    }
+};
 
 // ===================================
 // Ultimate UX Features (Quotes, Water, Streaks)

@@ -140,6 +140,10 @@
                 <h3>BMI Calculations</h3>
                 <div class="num" id="stat-bmi">0</div>
             </div>
+            <div class="stat-card" style="border-left-color: #ef4444;">
+                <h3>🐛 Bug Reports</h3>
+                <div class="num" id="stat-bugs" style="color:#ef4444;">0</div>
+            </div>
         </div>
 
         <h2 style="color: #162938; margin-bottom: 15px;">User Management</h2>
@@ -157,6 +161,28 @@
                 </thead>
                 <tbody id="user-table-body">
                     <!-- Users will go here -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Bug Reports Section -->
+        <h2 style="color: #ef4444; margin: 35px 0 15px; display:flex; align-items:center; gap:10px;">
+            🐛 Bug Reports
+            <span id="bug-count-badge" style="font-size:0.6em; background:#ef4444; color:#fff; padding:2px 10px; border-radius:20px; font-weight:600;">0</span>
+        </h2>
+        <div class="table-responsive">
+            <table id="bug-reports-table">
+                <thead>
+                    <tr>
+                        <th style="width:40px">ID</th>
+                        <th style="width:160px">อีเมล</th>
+                        <th>ข้อความ</th>
+                        <th style="width:150px">วันที่ส่ง</th>
+                        <th style="width:80px">Action</th>
+                    </tr>
+                </thead>
+                <tbody id="bug-table-body">
+                    <tr><td colspan="5" style="text-align:center; color:#64748b;">กำลังโหลด...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -180,6 +206,7 @@
             document.getElementById('admin-panel').style.display = 'block';
             await loadStats(token);
             await loadUsers(token);
+            await loadBugReports(token);
         };
 
         async function loadStats(token) {
@@ -191,6 +218,16 @@
                     document.getElementById('stat-scans').innerText = data.totalScans;
                     document.getElementById('stat-plans').innerText = data.totalPlans;
                     document.getElementById('stat-bmi').innerText = data.totalBMICalcs;
+                }
+            } catch (e) { console.error(e); }
+
+            // โหลดจำนวน bug reports
+            try {
+                const r = await fetch('/api/admin/bug-reports', { headers: { 'Authorization': `Bearer ${token}` } });
+                if (r.ok) {
+                    const bugs = await r.json();
+                    document.getElementById('stat-bugs').innerText = bugs.length;
+                    document.getElementById('bug-count-badge').innerText = bugs.length;
                 }
             } catch (e) { console.error(e); }
         }
@@ -245,6 +282,55 @@
                     loadUsers(token);
                 } else {
                     Swal.fire('Error', 'Failed to delete user.', 'error');
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        async function loadBugReports(token) {
+            try {
+                const res = await fetch('/api/admin/bug-reports', { headers: { 'Authorization': `Bearer ${token}` } });
+                const tbody = document.getElementById('bug-table-body');
+                if (res.ok) {
+                    const bugs = await res.json();
+                    if (bugs.length === 0) {
+                        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; color:#64748b;">ยังไม่มีรายงาน 🎉</td></tr>';
+                        return;
+                    }
+                    tbody.innerHTML = bugs.map(b => `
+                        <tr id="bug-row-${b.id}">
+                            <td>${b.id}</td>
+                            <td style="word-break:break-all;">${b.email || '<span style="color:#94a3b8;">ไม่ระบุ</span>'}</td>
+                            <td style="white-space:pre-wrap; max-width:350px;">${b.message}</td>
+                            <td style="white-space:nowrap;">${b.created_at}</td>
+                            <td><button class="btn-danger" onclick="deleteBugReport(${b.id})">Delete</button></td>
+                        </tr>
+                    `).join('');
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        async function deleteBugReport(id) {
+            const result = await Swal.fire({
+                title: 'ลบรายงานนี้?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#e74c3c',
+                cancelButtonColor: '#64748b',
+                confirmButtonText: 'ลบ',
+                cancelButtonText: 'ยกเลิก'
+            });
+            if (!result.isConfirmed) return;
+            const token = localStorage.getItem('token');
+            try {
+                const res = await fetch(`/api/admin/bug-reports/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    const row = document.getElementById(`bug-row-${id}`);
+                    if (row) row.remove();
+                    // อัปเดตจำนวน
+                    loadStats(token);
                 }
             } catch (e) { console.error(e); }
         }

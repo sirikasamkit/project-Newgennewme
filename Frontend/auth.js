@@ -95,6 +95,21 @@ window.logout = function () {
     window.checkLoginStatus();
 }
 
+// Auto-logout เมื่อ Token หมดอายุหรือ Invalid
+window.handleAuthError = function (status) {
+    if (status === 401 || status === 403) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        localStorage.removeItem('is_admin');
+        window.checkLoginStatus();
+        if (window.showToast) window.showToast('warning', 'เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่ 🔑');
+        // ถ้าอยู่หน้า profile หรือ history ให้ redirect
+        if (window.location.pathname.includes('profile.html') || window.location.pathname.includes('history.html')) {
+            setTimeout(() => { window.location.href = 'index.html'; }, 1500);
+        }
+    }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     // โหลดธีม
     const savedTheme = localStorage.getItem('theme') || 'light';
@@ -231,7 +246,60 @@ window.forgotPassword = async function (e) {
                 if (window.showToast) window.showToast('error', checkData.message || "ไม่พบอีเมลนี้ในระบบ");
             }
         } catch (error) {
-            if (window.showToast) window.showToast('error', "ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้");
+            if (window.showToast) window.showToast('error', "\u0e44\u0e21\u0e48\u0e2a\u0e32\u0e21\u0e32\u0e23\u0e16\u0e40\u0e0a\u0e37\u0e48\u0e2d\u0e21\u0e15\u0e48\u0e2d\u0e01\u0e31\u0e1a\u0e40\u0e0b\u0e34\u0e23\u0e4c\u0e1f\u0e40\u0e27\u0e2d\u0e23\u0e4c\u0e44\u0e14\u0e49");
         }
     }
 }
+
+// ===================================
+// Show/Hide Password Toggle + Password Strength Meter
+// ===================================
+document.addEventListener('DOMContentLoaded', () => {
+    // \u0e40\u0e1e\u0e34\u0e48\u0e21\u0e1b\u0e38\u0e48\u0e21\u0e15\u0e32\u0e43\u0e2b\u0e49\u0e17\u0e38\u0e01 password field \u0e43\u0e19 .wrapper
+    document.querySelectorAll('.input-box input[type="password"]').forEach(input => {
+        const box = input.parentElement;
+        const eyeBtn = document.createElement('button');
+        eyeBtn.type = 'button';
+        eyeBtn.innerHTML = '<ion-icon name="eye-outline"></ion-icon>';
+        eyeBtn.style.cssText = 'position:absolute;right:36px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text-accent);opacity:0.5;padding:0;display:flex;align-items:center;font-size:1.1em;transition:opacity 0.2s;z-index:2;';
+        eyeBtn.onmouseenter = () => eyeBtn.style.opacity = '1';
+        eyeBtn.onmouseleave = () => eyeBtn.style.opacity = '0.5';
+        eyeBtn.addEventListener('click', () => {
+            const isPass = input.type === 'password';
+            input.type = isPass ? 'text' : 'password';
+            eyeBtn.innerHTML = isPass ? '<ion-icon name="eye-off-outline"></ion-icon>' : '<ion-icon name="eye-outline"></ion-icon>';
+        });
+        box.appendChild(eyeBtn);
+    });
+
+    // Password Strength Meter \u0e2a\u0e33\u0e2b\u0e23\u0e31\u0e1a register
+    const regPw = document.getElementById('reg-password');
+    if (regPw) {
+        const bar = document.createElement('div');
+        bar.style.cssText = 'height:4px;border-radius:4px;transition:all 0.3s ease;width:0%;margin-top:6px;';
+        const lbl = document.createElement('div');
+        lbl.style.cssText = 'font-size:0.72em;margin-top:3px;font-weight:600;min-height:1em;transition:color 0.3s;';
+        regPw.parentElement.insertAdjacentElement('afterend', bar);
+        bar.insertAdjacentElement('afterend', lbl);
+
+        regPw.addEventListener('input', () => {
+            const pw = regPw.value;
+            if (!pw) { bar.style.width = '0%'; lbl.textContent = ''; return; }
+            let s = 0;
+            if (pw.length >= 8) s++;
+            if (/[A-Z]/.test(pw)) s++;
+            if (/[0-9]/.test(pw)) s++;
+            if (/[^A-Za-z0-9]/.test(pw)) s++;
+            const cfg = [
+                { c: '#ef4444', w: '25%', t: '\u25cf \u0e2d\u0e48\u0e2d\u0e19\u0e21\u0e32\u0e01 — \u0e15\u0e49\u0e2d\u0e07\u0e01\u0e32\u0e23\u0e2d\u0e22\u0e48\u0e32\u0e07\u0e19\u0e49\u0e2d\u0e22 8 \u0e15\u0e31\u0e27' },
+                { c: '#f97316', w: '50%', t: '\u25cf \u0e1e\u0e2d\u0e43\u0e0a\u0e49 — \u0e40\u0e1e\u0e34\u0e48\u0e21\u0e15\u0e31\u0e27\u0e40\u0e25\u0e02\u0e2b\u0e23\u0e37\u0e2d\u0e2d\u0e31\u0e01\u0e29\u0e23\u0e43\u0e2b\u0e0d\u0e48' },
+                { c: '#eab308', w: '75%', t: '\u25cf \u0e14\u0e35 — \u0e40\u0e1e\u0e34\u0e48\u0e21\u0e2d\u0e31\u0e01\u0e02\u0e23\u0e30\u0e1e\u0e34\u0e40\u0e28\u0e29\u0e40\u0e1e\u0e37\u0e48\u0e2d\u0e41\u0e02\u0e47\u0e07\u0e2a\u0e38\u0e14' },
+                { c: '#22c55e', w: '100%', t: '\u25cf \u0e41\u0e02\u0e47\u0e07\u0e21\u0e32\u0e01 \ud83d\udcaa' }
+            ][Math.max(0, s - 1)];
+            bar.style.background = cfg.c;
+            bar.style.width = cfg.w;
+            lbl.style.color = cfg.c;
+            lbl.textContent = cfg.t;
+        });
+    }
+});

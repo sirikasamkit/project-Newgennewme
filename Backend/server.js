@@ -457,17 +457,21 @@ app.post('/api/reset-password', forgotPasswordLimiter, async (req, res) => {
 // Protected User Routes
 // ==========================================
 
-// ดึงข้อมูลโปรไฟล์
+// ดึงข้อมูลโปรไฟล์ (ไม่ส่ง profile_image ที่อาจ Base64 ใหญ่)
 app.get('/api/profile', authenticateToken, (req, res) => {
-    const sql = `SELECT * FROM users WHERE id = ?`;
+    const sql = `SELECT id, username, email, age, gender, weight, height, goal_weight, activity, is_admin, created_at FROM users WHERE id = ?`;
     db.get(sql, [req.user.id], (err, row) => {
         if (err) return res.status(500).json({ error: err.message });
-        if (row) {
-            delete row.password; // ไม่ส่ง password กลับไป
-            res.json(row);
-        } else {
-            res.status(404).json({ message: "User not found" });
-        }
+        if (row) res.json(row);
+        else res.status(404).json({ message: "User not found" });
+    });
+});
+
+// ดึงเฉพาะรูปโปรไฟล์ (endpoint แยก เพื่อไม่ให้ Base64 ขนาดใหญ่ติดค้างเอ้ API call ทั่วไป)
+app.get('/api/profile/image', authenticateToken, (req, res) => {
+    db.get(`SELECT profile_image FROM users WHERE id = ?`, [req.user.id], (err, row) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ profile_image: row ? row.profile_image : null });
     });
 });
 
@@ -475,8 +479,9 @@ app.get('/api/profile', authenticateToken, (req, res) => {
 app.put('/api/profile', authenticateToken, (req, res) => {
     const { username, age, gender, weight, height, goal_weight, activity, profile_image } = req.body;
 
-    // Input Validation
-    if (!username || typeof username !== 'string' || username.trim().length < 1 || username.trim().length > 50) {
+    // Input Validation — username ใช้ fallback จาก token ถ้าว่าง
+    const safeUsername = (username || req.user.username || '').trim();
+    if (!safeUsername || safeUsername.length < 1 || safeUsername.length > 50) {
         return res.status(400).json({ error: "ชื่อผู้ใช้ไม่ถูกต้อง (1-50 ตัวอักษร)" });
     }
     const safeAge = age !== undefined && age !== '' ? parseInt(age) : null;
@@ -511,7 +516,7 @@ app.put('/api/profile', authenticateToken, (req, res) => {
 
     // อัปเดตข้อมูลผู้ใช้ (รวม Username และ Profile Image)
     const sql = `UPDATE users SET username = ?, age = ?, gender = ?, weight = ?, height = ?, goal_weight = ?, activity = ?, profile_image = ? WHERE id = ?`;
-    db.run(sql, [username.trim(), safeAge, gender || null, safeWeight, safeHeight, safeGoalWeight, activity || 'general', profile_image || null, req.user.id], function (err) {
+    db.run(sql, [safeUsername, safeAge, gender || null, safeWeight, safeHeight, safeGoalWeight, activity || 'general', profile_image || null, req.user.id], function (err) {
         if (err) {
             console.error('❌ Database error updating profile:', err);
             return res.status(500).json({ error: err.message });
@@ -539,9 +544,9 @@ app.get('/api/history', authenticateToken, async (req, res) => {
         };
 
         const [bmiRows, foodRows, planRows] = await Promise.all([
-            queryDB(`SELECT bmi, weight, height, status, datetime(created_at, 'localtime') as created_at FROM bmi_history WHERE user_id = ? ORDER BY id DESC LIMIT ? OFFSET ?`, [userId, limit + 1, offset]),
-            queryDB(`SELECT food_name, analysis, datetime(created_at, 'localtime') as created_at FROM saved_foods WHERE user_id = ? ORDER BY id DESC LIMIT ? OFFSET ?`, [userId, limit + 1, offset]),
-            queryDB(`SELECT plan_details, datetime(created_at, 'localtime') as created_at FROM user_plans WHERE user_id = ? ORDER BY id DESC LIMIT ? OFFSET ?`, [userId, limit + 1, offset])
+            queryDB(`SELECT id, bmi, weight, height, status, datetime(created_at, 'localtime') as created_at FROM bmi_history WHERE user_id = ? ORDER BY id DESC LIMIT ? OFFSET ?`, [userId, limit + 1, offset]),
+            queryDB(`SELECT id, food_name, analysis, datetime(created_at, 'localtime') as created_at FROM saved_foods WHERE user_id = ? ORDER BY id DESC LIMIT ? OFFSET ?`, [userId, limit + 1, offset]),
+            queryDB(`SELECT id, plan_details, datetime(created_at, 'localtime') as created_at FROM user_plans WHERE user_id = ? ORDER BY id DESC LIMIT ? OFFSET ?`, [userId, limit + 1, offset])
         ]);
 
         const hasMore = (bmiRows.length > limit || foodRows.length > limit || planRows.length > limit);
@@ -640,6 +645,50 @@ app.delete('/api/admin/users/:id', authenticateAdmin, (req, res) => {
             if (err) return res.status(500).json({ error: err.message });
             res.json({ success: true, message: "User completely deleted" });
         });
+    });
+});
+
+// ==========================================
+// Admin: ดู Bug Reports
+// ==========================================
+app.get('/api/admin/bug-reports', authenticateAdmin, (req, res) => {
+    db.all(`SELECT id, email, message, created_at FROM bug_reports ORDER BY id DESC LIMIT 100`, [], (err, rows) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json(rows);
+    });
+});
+
+app.delete('/api/admin/bug-reports/:id', authenticateAdmin, (req, res) => {
+    db.run(`DELETE FROM bug_reports WHERE id = ?`, [req.params.id], function (err) {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ success: true });
+    });
+});
+
+// ==========================================
+// User History Delete Endpoints
+// ==========================================
+app.delete('/api/history/bmi/:id', authenticateToken, (req, res) => {
+    db.run(`DELETE FROM bmi_history WHERE id = ? AND user_id = ?`, [req.params.id, req.user.id], function (err) {
+        if (err) return res.status(500).json({ error: err.message });
+        if (this.changes === 0) return res.status(404).json({ error: 'ไม่พบข้อมูล' });
+        res.json({ success: true });
+    });
+});
+
+app.delete('/api/history/food/:id', authenticateToken, (req, res) => {
+    db.run(`DELETE FROM saved_foods WHERE id = ? AND user_id = ?`, [req.params.id, req.user.id], function (err) {
+        if (err) return res.status(500).json({ error: err.message });
+        if (this.changes === 0) return res.status(404).json({ error: 'ไม่พบข้อมูล' });
+        res.json({ success: true });
+    });
+});
+
+app.delete('/api/history/plan/:id', authenticateToken, (req, res) => {
+    db.run(`DELETE FROM user_plans WHERE id = ? AND user_id = ?`, [req.params.id, req.user.id], function (err) {
+        if (err) return res.status(500).json({ error: err.message });
+        if (this.changes === 0) return res.status(404).json({ error: 'ไม่พบข้อมูล' });
+        res.json({ success: true });
     });
 });
 
