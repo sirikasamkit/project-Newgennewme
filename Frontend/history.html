@@ -11,7 +11,7 @@
         href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Prompt:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="main.css">
-    <link rel="stylesheet" href="https://pyscript.net/releases/2024.1.1/core.css">
+    <meta name="description" content="ดูประวัติ BMI วิเคราะห์อาหาร และแผนสุขภาพ AI ทั้งหมดของคุณ">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
@@ -30,8 +30,9 @@
             <a href="contact.html">Contact</a>
             <a href="profile.html" id="nav-profile-btn"
                 style="display:none; align-items: center; gap: 8px; color: #10b981; font-weight: bold; text-decoration: none;">
-                <img id="nav-profile-pic" src="https://via.placeholder.com/30"
-                    style="width: 30px; height: 30px; border-radius: 50%; object-fit: cover; border: 1px solid #10b981;">
+                <img id="nav-profile-pic" src="" alt="Profile"
+                    style="width: 30px; height: 30px; border-radius: 50%; object-fit: cover; border: 1px solid #10b981; background: #e2e8f0;">
+
                 Profile
             </a>
             <a href="history.html" id="nav-history-btn"
@@ -122,7 +123,8 @@
         <div id="dashboard-view" style="display: none;">
             <section class="info-card" id="history-section">
                 <h1 style="margin-bottom: 10px;">รายการประวัติย้อนหลัง</h1>
-                <p style="color: #64748b; margin-bottom: 30px;">ติดตามความก้าวหน้าและการวิเคราะห์สุขภาพของคุณได้ที่นี่</p>
+                <p style="color: #64748b; margin-bottom: 30px;">ติดตามความก้าวหน้าและการวิเคราะห์สุขภาพของคุณได้ที่นี่
+                </p>
 
                 <!-- Tabs Navigation -->
                 <div class="history-tabs">
@@ -163,15 +165,18 @@
 
                 <!-- Load More Button -->
                 <div id="load-more-container" style="text-align: center; margin-top: 30px; display: none;">
-                    <button id="load-more-btn" onclick="window.loadHistory(currentHistoryPage + 1, true)" class="btn" style="width: auto; padding: 12px 30px;">
+                    <button id="load-more-btn" onclick="window.loadHistory(currentHistoryPage + 1, true)" class="btn"
+                        style="width: auto; padding: 12px 30px;">
                         โหลดข้อมูลเพิ่มเติม <ion-icon name="chevron-down-outline" style="margin-left: 5px;"></ion-icon>
                     </button>
                 </div>
-                
+
                 <!-- Skeleton Loader Template (Hidden by default) -->
                 <div id="history-skeleton" style="display: none;">
-                    <div class="history-item-card skeleton-loader" style="height: 100px; margin-bottom: 15px; border-radius: 20px;"></div>
-                    <div class="history-item-card skeleton-loader" style="height: 100px; margin-bottom: 15px; border-radius: 20px;"></div>
+                    <div class="history-item-card skeleton-loader"
+                        style="height: 100px; margin-bottom: 15px; border-radius: 20px;"></div>
+                    <div class="history-item-card skeleton-loader"
+                        style="height: 100px; margin-bottom: 15px; border-radius: 20px;"></div>
                     <div class="history-item-card skeleton-loader" style="height: 100px; border-radius: 20px;"></div>
                 </div>
             </section>
@@ -179,18 +184,31 @@
 
     </main>
 
-    <!-- Auto-load history when on history page if logged in -->
     <script>
-        // We can call loadHistory automatically if the user is already logged in
-        document.addEventListener("DOMContentLoaded", function () {
-            // Delay slightly to ensure script.js variables and token are setup
-            setTimeout(() => {
-                const token = localStorage.getItem('token');
-                if (token) {
-                    loadHistory();
-                }
-            }, 500);
+        // Login Guard: redirect ถ้าไม่ได้ login
+        if (!localStorage.getItem('token')) {
+            window.location.href = 'index.html';
+        }
+
+        // Wait for ALL deferred scripts to finish, then auto-load history
+        window.addEventListener('load', function () {
+            const token = localStorage.getItem('token');
+            if (token && window.loadHistory) {
+                loadHistory();
+            }
         });
+
+        // Tab switching function (backup, in case ui.js not yet ready)
+        if (typeof window.switchTab === 'undefined') {
+            window.switchTab = function (tabName) {
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                document.querySelectorAll('.history-tab-btn').forEach(b => b.classList.remove('active'));
+                const sel = document.getElementById(tabName + '-tab');
+                const btn = document.getElementById('tab-btn-' + tabName);
+                if (sel) sel.classList.add('active');
+                if (btn) btn.classList.add('active');
+            };
+        }
     </script>
 
     <script src="ui.js" defer></script>

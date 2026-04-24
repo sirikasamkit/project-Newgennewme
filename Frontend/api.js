@@ -12,9 +12,6 @@ window.loadProfile = async function () {
         if (response.ok) {
             const data = await response.json();
             if (document.getElementById('profile-username')) document.getElementById('profile-username').value = data.username || '';
-            if (document.getElementById('profile-preview') && data.profile_image) {
-                document.getElementById('profile-preview').src = data.profile_image;
-            }
             if (document.getElementById('profile-age')) document.getElementById('profile-age').value = data.age || '';
             if (document.getElementById('profile-gender')) document.getElementById('profile-gender').value = data.gender || '';
             if (document.getElementById('profile-height')) document.getElementById('profile-height').value = data.height || '';
@@ -25,27 +22,82 @@ window.loadProfile = async function () {
             if (typeof updateGoalProgress === 'function') {
                 updateGoalProgress(data.weight, data.goal_weight);
             }
+
+            // \u0e42\u0e2b\u0e25\u0e14\u0e23\u0e39\u0e1b\u0e42\u0e1b\u0e23\u0e44\u0e1f\u0e25\u0e4c\u0e41\u0e22\u0e01\u0e15\u0e48\u0e32\u0e07\u0e2b\u0e32\u0e01 (\u0e40\u0e1e\u0e37\u0e48\u0e2d\u0e44\u0e21\u0e48\u0e43\u0e2b\u0e49 Base64 \u0e43\u0e2b\u0e0d\u0e48\u0e15\u0e34\u0e14\u0e04\u0e49\u0e32\u0e07\u0e17\u0e38\u0e01 API call)
+            const previewEl = document.getElementById('profile-preview');
+            if (previewEl) {
+                fetch('/api/profile/image', { headers: { 'Authorization': `Bearer ${token}` } })
+                    .then(r => r.json())
+                    .then(imgData => {
+                        if (imgData.profile_image) {
+                            previewEl.src = imgData.profile_image;
+                            previewEl.setAttribute('data-base64', imgData.profile_image);
+                        }
+                    })
+                    .catch(() => {});
+            }
         }
     } catch (error) {
         console.error("Error loading profile", error);
     }
 }
 
+// Helper: Compress image to Base64 (max 800px, quality 0.75)
+window.compressImageToBase64 = function (file, maxWidth = 800, quality = 0.75) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            const img = new Image();
+            img.onload = function () {
+                const canvas = document.createElement('canvas');
+                let w = img.width;
+                let h = img.height;
+                if (w > maxWidth) {
+                    h = Math.round(h * maxWidth / w);
+                    w = maxWidth;
+                }
+                canvas.width = w;
+                canvas.height = h;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, w, h);
+                const base64 = canvas.toDataURL('image/jpeg', quality);
+                resolve(base64);
+            };
+            img.onerror = reject;
+            img.src = e.target.result;
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+    });
+};
+
 window.saveProfile = async function () {
     const token = localStorage.getItem('token');
     const username = document.getElementById('profile-username').value;
-    let profile_image = document.getElementById('profile-preview').src;
 
-    // Don't save if it's just the placeholder URL
-    if (profile_image.includes('placeholder.com')) {
-        profile_image = null;
+    // Bug Fix: อ่านรูปจาก data-base64 attribute แทน .src ที่ browser อาจ resolve เป็น absolute URL
+    const previewEl = document.getElementById('profile-preview');
+    let profile_image = previewEl ? previewEl.getAttribute('data-base64') || null : null;
+
+    // Fallback: ถ้า data-base64 ไม่มี ให้ตรวจสอบ .src ว่าเป็น data URL จริงหรือไม่
+    if (!profile_image && previewEl) {
+        const src = previewEl.src || '';
+        if (src.startsWith('data:image/')) {
+            profile_image = src;
+        }
     }
+
     const age = document.getElementById('profile-age').value;
     const gender = document.getElementById('profile-gender').value;
     const height = document.getElementById('profile-height').value;
     const weight = document.getElementById('profile-weight').value;
     const goal_weight = document.getElementById('profile-goal').value;
     const activity = document.getElementById('profile-activity').value;
+
+    // Log ขนาดรูปที่จะ save
+    if (profile_image) {
+        console.log(`📸 Sending profile image size: ${(profile_image.length / 1024).toFixed(2)} KB`);
+    }
 
     try {
         const response = await fetch('/api/profile', {
@@ -62,18 +114,23 @@ window.saveProfile = async function () {
             // Update UI globally
             if (window.checkLoginStatus) window.checkLoginStatus();
 
-            if (window.showToast) window.showToast('success', 'บันทึกโปรไฟล์เรียบร้อยแล้ว');
+            if (window.showToast) window.showToast('success', 'บันทึกโปรไฟล์เรียบร้อยแล้ว ✅');
             if (typeof updateGoalProgress === 'function') {
                 updateGoalProgress(weight, goal_weight);
             }
         } else {
             const errData = await response.json().catch(() => ({}));
             console.error('Server error saving profile:', response.status, errData);
-            if (window.showToast) window.showToast('error', `เกิดข้อผิดพลาด: ${errData.error || 'เซิร์ฟเวอร์ปฏิเสธการบันทึก'}`);
+            // Auto-logout ถ้า token หมดอายุ/invalid
+            if (response.status === 401 || response.status === 403) {
+                if (window.handleAuthError) window.handleAuthError(response.status);
+            } else {
+                if (window.showToast) window.showToast('error', `เกิดข้อผิดพลาด: ${errData.error || 'เซิร์ฟเวอร์ปฏิเสธการบันทึก'}`);
+            }
         }
     } catch (error) {
         console.error('Fetch error saving profile:', error);
-        if (window.showToast) window.showToast('error', 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ (อาจเป็นเพราะไฟล์ใหญ่เกินไป หรือเซิร์ฟเวอร์ค้าง)');
+        if (window.showToast) window.showToast('error', 'ไม่สามารถเชื่อมต่อได้ (ไฟล์อาจใหญ่เกินไปหรือเซิร์ฟเวอร์ค้าง)');
     }
 }
 
@@ -283,7 +340,7 @@ window.loadHistory = async function (page = 1, append = false) {
                 data.bmi.forEach(b => {
                     const statusClass = b.status.includes('ปกติ') ? 'sp-normal' : (b.status.includes('อ้วน') ? 'sp-danger' : 'sp-warning');
                     bmiHtml += `
-                        <div class="history-item-card">
+                        <div class="history-item-card" id="bmi-card-${b.id}">
                             <div class="hc-header">
                                 <span class="hc-title">BMI Record</span>
                                 <span class="hc-date"><ion-icon name="calendar-outline"></ion-icon> ${b.created_at}</span>
@@ -291,12 +348,14 @@ window.loadHistory = async function (page = 1, append = false) {
                             <div class="hc-stats">
                                 <div class="hc-stat-box"><strong>น้ำหนัก:</strong> ${b.weight} กก.</div>
                                 <div class="hc-stat-box"><strong>ส่วนสูง:</strong> ${b.height} ซม.</div>
-                                <div class="hc-stat-box" style="background: var(--text-accent); color: white;"><strong>BMI:</strong> ${b.bmi}</div>
+                                <div class="hc-stat-box" style="background: #0ea5e9; color: white;"><strong>BMI:</strong> ${b.bmi}</div>
                             </div>
-                            <div style="margin-top: 15px;">
+                            <div style="margin-top: 15px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
                                 <span class="status-pill ${statusClass}">${b.status}</span>
+                                <button onclick="deleteHistoryItem('bmi', ${b.id})" style="background: none; border: 1px solid #ef4444; color: #ef4444; padding: 4px 12px; border-radius: 8px; cursor: pointer; font-size: 0.8em; transition: all 0.2s;" onmouseover="this.style.background='#ef4444';this.style.color='white'" onmouseout="this.style.background='none';this.style.color='#ef4444'">♻️ ลบ</button>
                             </div>
                         </div>`;
+
                 });
             } else if (!append) {
                 bmiHtml = `<div class="empty-state"><ion-icon name="fitness-outline"></ion-icon><p>ยังไม่มีประวัติการคำนวณ BMI</p></div>`;
@@ -307,13 +366,16 @@ window.loadHistory = async function (page = 1, append = false) {
             if (data.foods && data.foods.length > 0) {
                 data.foods.forEach(f => {
                     foodHtml += `
-                        <div class="history-item-card">
+                        <div class="history-item-card" id="food-card-${f.id}">
                             <div class="hc-header">
                                 <span class="hc-title">🍽️ ${f.food_name}</span>
                                 <span class="hc-date"><ion-icon name="time-outline"></ion-icon> ${f.created_at}</span>
                             </div>
                             <div class="history-card-body" style="margin-top: 10px; padding: 15px; background: rgba(0,0,0,0.03); border-radius: 12px; font-size: 0.95em;">
                                 ${parseMarkdown(f.analysis)}
+                            </div>
+                            <div style="text-align: right; margin-top: 10px;">
+                                <button onclick="deleteHistoryItem('food', ${f.id})" style="background: none; border: 1px solid #ef4444; color: #ef4444; padding: 4px 12px; border-radius: 8px; cursor: pointer; font-size: 0.8em; transition: all 0.2s;" onmouseover="this.style.background='#ef4444';this.style.color='white'" onmouseout="this.style.background='none';this.style.color='#ef4444'">♻️ ลบ</button>
                             </div>
                         </div>`;
                 });
@@ -325,12 +387,11 @@ window.loadHistory = async function (page = 1, append = false) {
             let planHtml = '';
             if (data.plans && data.plans.length > 0) {
                 data.plans.forEach(p => {
-                    // Pre-process for important notices
                     let planContent = parseMarkdown(p.plan_details);
                     planContent = planContent.replace(/(ข้อสำคัญ:.*?)(?=<br>|<\/p>|$)/g, '<div style="background: rgba(245, 158, 11, 0.1); border-left: 4px solid #f59e0b; padding: 12px; margin: 15px 0; border-radius: 4px; color: #92400e;"><strong>⚠️ $1</strong></div>');
 
                     planHtml += `
-                        <div class="history-item-card" style="border-left: 6px solid #10b981; padding: 30px;">
+                        <div class="history-item-card" id="plan-card-${p.id}" style="border-left: 6px solid #10b981; padding: 30px;">
                             <div class="hc-header" style="margin-bottom: 20px;">
                                 <div style="display: flex; align-items: center; gap: 12px;">
                                     <div style="background: #10b981; color: white; width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.5em;">
@@ -341,6 +402,7 @@ window.loadHistory = async function (page = 1, append = false) {
                                         <div class="hc-date" style="margin-top: 2px;">วิเคราะห์เมื่อ: ${p.created_at}</div>
                                     </div>
                                 </div>
+                                <button onclick="deleteHistoryItem('plan', ${p.id})" style="background: none; border: 1px solid #ef4444; color: #ef4444; padding: 4px 12px; border-radius: 8px; cursor: pointer; font-size: 0.8em; transition: all 0.2s; align-self: flex-start;" onmouseover="this.style.background='#ef4444';this.style.color='white'" onmouseout="this.style.background='none';this.style.color='#ef4444'">♻️ ลบ</button>
                             </div>
                             <div class="history-card-body" style="font-size: 1.05em; line-height: 1.9; color: var(--text-main);">
                                 ${planContent}
@@ -387,6 +449,50 @@ window.loadHistory = async function (page = 1, append = false) {
     }
 }
 
+// ===================================
+// Delete History Item
+// ===================================
+window.deleteHistoryItem = async function (type, id) {
+    const confirmResult = await Swal.fire({
+        title: '\u0e25\u0e1a\u0e23\u0e32\u0e22\u0e01\u0e32\u0e23\u0e19\u0e35\u0e49?',
+        text: '\u0e04\u0e38\u0e13\u0e44\u0e21\u0e48\u0e2a\u0e32\u0e21\u0e32\u0e23\u0e16\u0e2d\u0e31\u0e19\u0e14\u0e39\u0e01\u0e25\u0e31\u0e1a\u0e44\u0e14\u0e49\u0e2b\u0e25\u0e31\u0e07\u0e08\u0e32\u0e01\u0e25\u0e1a\u0e41\u0e25\u0e49\u0e27',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#64748b',
+        confirmButtonText: '\u0e25\u0e1a\u0e40\u0e25\u0e22',
+        cancelButtonText: '\u0e22\u0e01\u0e40\u0e25\u0e34\u0e01'
+    });
+    if (!confirmResult.isConfirmed) return;
+
+    const token = localStorage.getItem('token');
+    const endpointMap = { bmi: 'bmi', food: 'food', plan: 'plan' };
+    const endpoint = endpointMap[type];
+    if (!endpoint) return;
+
+    try {
+        const res = await fetch(`/api/history/${endpoint}/${id}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+            // \u0e25\u0e1a card \u0e2d\u0e2d\u0e01\u0e08\u0e32\u0e01 DOM \u0e2d\u0e22\u0e48\u0e32\u0e07 smooth
+            const card = document.getElementById(`${type}-card-${id}`);
+            if (card) {
+                card.style.transition = 'all 0.3s ease';
+                card.style.opacity = '0';
+                card.style.transform = 'translateX(-20px)';
+                setTimeout(() => card.remove(), 300);
+            }
+            if (window.showToast) window.showToast('success', '\u0e25\u0e1a\u0e40\u0e23\u0e35\u0e22\u0e1a\u0e23\u0e49\u0e2d\u0e22\u0e41\u0e25\u0e49\u0e27 \u267b\ufe0f');
+        } else {
+            const err = await res.json().catch(() => ({}));
+            if (window.showToast) window.showToast('error', err.error || '\u0e25\u0e1a\u0e44\u0e21\u0e48\u0e2a\u0e33\u0e40\u0e23\u0e47\u0e08');
+        }
+    } catch (e) {
+        if (window.showToast) window.showToast('error', '\u0e44\u0e21\u0e48\u0e2a\u0e32\u0e21\u0e32\u0e23\u0e16\u0e40\u0e0a\u0e37\u0e48\u0e2d\u0e21\u0e15\u0e48\u0e2d\u0e44\u0e14\u0e49');
+    }
+};
 
 // ===================================
 // Ultimate UX Features (Quotes, Water, Streaks)
@@ -443,14 +549,17 @@ window.renderWaterTracker = function () {
 
 window.addWater = function () {
     let count = window.getWaterCount();
-    if (count < 8) {
-        localStorage.setItem(window.getWaterKey(), count + 1);
-        window.renderWaterTracker();
-        if (window.showToast) window.showToast('success', 'ดื่มน้ำเพิ่ม 1 แก้ว เก่งมาก! 💧');
+    if (count >= 8) {
+        if (window.showToast) window.showToast('info', 'คุณดื่มน้ำถึงเป้าหมาย 8 แก้วแล้ววันนี้! 🎉');
+        return;
+    }
+    const newCount = count + 1;
+    localStorage.setItem(window.getWaterKey(), newCount);
+    window.renderWaterTracker();
+    if (newCount >= 8) {
+        if (window.showToast) window.showToast('success', 'ยอดเยี่ยม! ครบ 8 แก้วแล้ว 🏆💧');
     } else {
-        localStorage.setItem(window.getWaterKey(), count + 1);
-        window.renderWaterTracker();
-        if (window.showToast) window.showToast('info', 'คุณดื่มน้ำถึงเป้าหมายแล้ววันนี้! 🎉');
+        if (window.showToast) window.showToast('success', `ดื่มน้ำแก้วที่ ${newCount} เก่งมาก! 💧`);
     }
 }
 
@@ -545,8 +654,18 @@ window.renderWeeklySnapshots = function () {
     if (!waterCtx || !sleepCtx) return;
 
     const days = ['จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.', 'อา.'];
-    const waterData = [6, 8, 5, 7, 8, 4, 6];
-    const sleepData = [7, 6.5, 8, 7, 6, 9, 8.5];
+
+    // ดึงข้อมูลจริงจาก localStorage สำหรับ 7 วันย้อนหลัง
+    const waterData = [];
+    const sleepData = [];
+    const today = new Date();
+    for (let i = 6; i >= 0; i--) {
+        const d = new Date(today);
+        d.setDate(today.getDate() - i);
+        const dateKey = d.toLocaleDateString('en-CA'); // YYYY-MM-DD
+        waterData.push(parseInt(localStorage.getItem(`water_intake_${dateKey}`)) || 0);
+        sleepData.push(parseFloat(localStorage.getItem(`sleep_${dateKey}`)) || 0);
+    }
 
     if (weeklyWaterChartInstance) weeklyWaterChartInstance.destroy();
     if (weeklySleepChartInstance) weeklySleepChartInstance.destroy();
@@ -562,7 +681,7 @@ window.renderWeeklySnapshots = function () {
         },
         options: {
             responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
-            scales: { x: { ticks: { color: color, font: { size: 10 } }, grid: { display: false } }, y: { ticks: { color: color, font: { size: 10 } }, beginAtZero: true } }
+            scales: { x: { ticks: { color: color, font: { size: 10 } }, grid: { display: false } }, y: { ticks: { color: color, font: { size: 10 } }, beginAtZero: true, max: 8 } }
         }
     });
 
@@ -574,7 +693,7 @@ window.renderWeeklySnapshots = function () {
         },
         options: {
             responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } },
-            scales: { x: { ticks: { color: color, font: { size: 10 } }, grid: { display: false } }, y: { ticks: { color: color, font: { size: 10 } }, beginAtZero: true } }
+            scales: { x: { ticks: { color: color, font: { size: 10 } }, grid: { display: false } }, y: { ticks: { color: color, font: { size: 10 } }, beginAtZero: true, max: 12 } }
         }
     });
 }

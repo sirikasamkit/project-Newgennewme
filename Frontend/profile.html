@@ -4,14 +4,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Profile - NewGen NewME</title>
+    <title>โปรไฟล์ของฉัน - NeWGen NewME</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Prompt:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="main.css">
-    <link rel="stylesheet" href="https://pyscript.net/releases/2024.1.1/core.css">
+    <meta name="description" content="จัดการโปรไฟล์สุขภาพของคุณ ตั้งค่าน้ำหนัก ส่วนสูง และเป้าหมาย">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
@@ -52,14 +52,14 @@
             <!-- Profile Picture Section -->
             <div class="profile-pic-container" style="margin-bottom: 25px;">
                 <div style="position: relative; display: inline-block;">
-                    <img id="profile-preview" src="https://via.placeholder.com/150" alt="Profile"
-                        style="width: 150px; height: 150px; border-radius: 50%; object-fit: cover; border: 4px solid #10b981; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                    <img id="profile-preview" src="" alt="Profile" data-base64=""
+                        style="width: 150px; height: 150px; border-radius: 50%; object-fit: cover; border: 4px solid #10b981; box-shadow: 0 4px 15px rgba(0,0,0,0.1); background: #e2e8f0;">
                     <label for="profile-upload"
                         style="position: absolute; bottom: 5px; right: 5px; background: #10b981; color: white; width: 35px; height: 35px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 2px 8px rgba(0,0,0,0.2);">
                         <ion-icon name="camera-outline" style="font-size: 20px;"></ion-icon>
                     </label>
                     <input type="file" id="profile-upload" accept="image/*" style="display: none;"
-                        onchange="previewImage(event)">
+                        onchange="previewProfileImage(event)">
                 </div>
                 <p style="font-size: 0.9em; color: #64748b; margin-top: 10px;">คลิกเพื่ออัปโหลดรูปโปรไฟล์</p>
             </div>
@@ -78,6 +78,7 @@
                     <option value="">เลือกเพศ...</option>
                     <option value="male">ชาย</option>
                     <option value="female">หญิง</option>
+                    <option value="other">ไม่ระบุ / Non-binary</option>
                 </select>
             </div>
             <div class="input-group">
@@ -117,16 +118,54 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            // Login Guard: redirect ถ้าไม่ได้ login
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = 'index.html';
+                return;
+            }
             if (window.loadProfile) window.loadProfile();
         });
 
-        function previewImage(event) {
+        // Profile-specific image preview — ใช้ canvas compress รูปและเก็บ Base64 ใน data-base64
+        function previewProfileImage(event) {
             const file = event.target.files[0];
-            if (file) {
+            if (!file) return;
+
+            // ตรวจสอบขนาดไฟล์ (max 10MB ก่อน compress)
+            if (file.size > 10 * 1024 * 1024) {
+                if (window.showToast) window.showToast('error', 'ไฟล์ใหญ่เกิน 10MB กรุณาเลือกรูปที่เล็กกว่านี้');
+                return;
+            }
+
+            // ใช้ compressImageToBase64 จาก api.js (max 800px, quality 0.75)
+            if (window.compressImageToBase64) {
+                window.compressImageToBase64(file, 800, 0.75)
+                    .then(base64 => {
+                        const preview = document.getElementById('profile-preview');
+                        preview.src = base64;
+                        preview.setAttribute('data-base64', base64); // เก็บสำหรับ saveProfile()
+                        console.log(`🖼️ Image compressed: ${(base64.length / 1024).toFixed(2)} KB`);
+                    })
+                    .catch(err => {
+                        console.error('Compress failed, using raw FileReader:', err);
+                        // Fallback: FileReader แบบ raw
+                        const reader = new FileReader();
+                        reader.onload = function (e) {
+                            const preview = document.getElementById('profile-preview');
+                            preview.src = e.target.result;
+                            preview.setAttribute('data-base64', e.target.result);
+                        };
+                        reader.readAsDataURL(file);
+                    });
+            } else {
+                // Fallback ถ้า api.js ยังไม่โหลด
                 const reader = new FileReader();
                 reader.onload = function (e) {
-                    document.getElementById('profile-preview').src = e.target.result;
-                }
+                    const preview = document.getElementById('profile-preview');
+                    preview.src = e.target.result;
+                    preview.setAttribute('data-base64', e.target.result);
+                };
                 reader.readAsDataURL(file);
             }
         }

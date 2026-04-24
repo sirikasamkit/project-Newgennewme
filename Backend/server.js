@@ -7,13 +7,15 @@ const multer = require('multer');
 const sqlite3 = require('sqlite3').verbose();
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const rateLimit = require('express-rate-limit'); // Moved to top-level
 
 const app = express();
+app.set('trust proxy', 1); // Enable trusting proxy for rate limiting (needed for Ngrok)
 app.use(cors());
 app.use(express.json({ limit: '20mb' }));
 app.use(express.urlencoded({ limit: '20mb', extended: true }));
 
-// NEW: Crash Recovery & Logging
+// Crash Recovery & Logging
 process.on('uncaughtException', (err) => {
     console.error('💥 UNCAUGHT EXCEPTION:', err);
 });
@@ -21,13 +23,29 @@ process.on('unhandledRejection', (reason, promise) => {
     console.error('💥 UNHANDLED REJECTION at:', promise, 'reason:', reason);
 });
 
-const rateLimit = require('express-rate-limit');
+// Rate Limiter for Login (Max 10 attempts per 15 minutes)
+const loginLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 10,
+    message: { error: "เข้าสู่ระบบผิดพลาดบ่อยเกินไป กรุณารอ 15 นาทีแล้วลองใหม่" },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
 
-// Rate Limiter for Auth Routes (Max 5 requests per 15 minutes)
-const authLimiter = rateLimit({
+// Rate Limiter for Register (Max 5 requests per hour)
+const registerLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000,
+    max: 5,
+    message: { error: "สมัครสมาชิกบ่อยเกินไป กรุณารอ 1 ชั่วโมงแล้วลองใหม่" },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
+// Rate Limiter for Forgot Password (Max 5 requests per 15 minutes)
+const forgotPasswordLimiter = rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 5,
-    message: { error: "ทำรายการบ่อยเกินไป กรุณารอ 15 นาทีแล้วลองใหม่" },
+    message: { error: "คำขอรีเซ็ตรหัสผ่านบ่อยเกินไป กรุณารอ 15 นาทีแล้วลองใหม่" },
     standardHeaders: true,
     legacyHeaders: false,
 });
@@ -46,7 +64,7 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const JWT_SECRET = process.env.JWT_SECRET || 'newgen_super_secret_key';
 
 if (JWT_SECRET === 'newgen_super_secret_key') {
-    console.warn('⚠️ WARNING: Using default JWT_SECRET. Do not use this in production!');
+    console.log('⚠️  WARNING: Using default JWT_SECRET. Do not use this in production!');
 }
 
 // ==========================================
@@ -271,11 +289,19 @@ app.post('/api/analyze-food', upload.single('image'), async (req, res) => {
 app.post('/api/chat', async (req, res) => {
     try {
         const { message } = req.body;
+        // Bug fix #1: Validate message is not empty before calling AI
+        if (!message || typeof message !== 'string' || message.trim() === '') {
+            return res.status(400).json({ error: "กรุณาพิมพ์ข้อความก่อนส่งครับ" });
+        }
+
+        // Security: Sanitize input — limit length and strip injection-prone characters
+        const sanitizedMessage = message.trim().substring(0, 500).replace(/[`'"\\]/g, '');
+
         const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
         const prompt = `คุณคือ NeWGen AI ผู้ช่วยอัจฉริยะด้านสุขภาพและความงาม (Wellness Assistant)
         หน้าที่ของคุณคือตอบคำถามเกี่ยวกับสุขภาพ การออกกำลังกาย โภชนาการ และการดูแลตัวเอง 
-        คำถามจากผู้ใช้: "${message}"
+        คำถามจากผู้ใช้: "${sanitizedMessage}"
         
         คำแนะนำ:
         - ตอบอย่างเป็นกันเองและเป็นบวก
@@ -299,7 +325,7 @@ app.post('/api/chat', async (req, res) => {
 // ==========================================
 
 // API สำหรับสมัครสมาชิก
-app.post('/api/register', authLimiter, async (req, res) => {
+app.post('/api/register', registerLimiter, async (req, res) => {
     const { username, email, password } = req.body;
 
     // ตรวจสอบความถูกต้องของ Input เบื้องต้น
@@ -335,7 +361,7 @@ app.post('/api/register', authLimiter, async (req, res) => {
 });
 
 // API สำหรับ Login
-app.post('/api/login', authLimiter, (req, res) => {
+app.post('/api/login', loginLimiter, (req, res) => {
     const { email, password } = req.body;
 
     // ตรวจสอบความถูกต้องของ Input เบื้องต้น
@@ -381,7 +407,7 @@ app.post('/api/login', authLimiter, (req, res) => {
 });
 
 // API สำหรับตรวจสอบว่ามีอีเมลนี้ในระบบหรือไม่ (ลืมรหัสผ่าน ขั้นตอนที่ 1)
-app.post('/api/check-email', (req, res) => {
+app.post('/api/check-email', forgotPasswordLimiter, (req, res) => {
     const { email } = req.body;
     if (!email) {
         return res.status(400).json({ message: "กรุณากรอกอีเมล" });
@@ -399,11 +425,16 @@ app.post('/api/check-email', (req, res) => {
 });
 
 // API สำหรับรีเซ็ตรหัสผ่าน (ลืมรหัสผ่าน ขั้นตอนที่ 2)
-app.post('/api/reset-password', async (req, res) => {
+app.post('/api/reset-password', forgotPasswordLimiter, async (req, res) => {
     const { email, new_password } = req.body;
 
     if (!email || !new_password) {
         return res.status(400).json({ error: "กรุณากรอกข้อมูลให้ครบถ้วน" });
+    }
+
+    // Bug fix #2: Validate new password length (same as register)
+    if (new_password.length < 6) {
+        return res.status(400).json({ error: "รหัสผ่านต้องมีความยาวอย่างน้อย 6 ตัวอักษร" });
     }
 
     try {
@@ -426,23 +457,57 @@ app.post('/api/reset-password', async (req, res) => {
 // Protected User Routes
 // ==========================================
 
-// ดึงข้อมูลโปรไฟล์
+// ดึงข้อมูลโปรไฟล์ (ไม่ส่ง profile_image ที่อาจ Base64 ใหญ่)
 app.get('/api/profile', authenticateToken, (req, res) => {
-    const sql = `SELECT * FROM users WHERE id = ?`;
+    const sql = `SELECT id, username, email, age, gender, weight, height, goal_weight, activity, is_admin, created_at FROM users WHERE id = ?`;
     db.get(sql, [req.user.id], (err, row) => {
         if (err) return res.status(500).json({ error: err.message });
-        if (row) {
-            delete row.password; // ไม่ส่ง password กลับไป
-            res.json(row);
-        } else {
-            res.status(404).json({ message: "User not found" });
-        }
+        if (row) res.json(row);
+        else res.status(404).json({ message: "User not found" });
+    });
+});
+
+// ดึงเฉพาะรูปโปรไฟล์ (endpoint แยก เพื่อไม่ให้ Base64 ขนาดใหญ่ติดค้างเอ้ API call ทั่วไป)
+app.get('/api/profile/image', authenticateToken, (req, res) => {
+    db.get(`SELECT profile_image FROM users WHERE id = ?`, [req.user.id], (err, row) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ profile_image: row ? row.profile_image : null });
     });
 });
 
 // อัปเดตข้อมูลโปรไฟล์
 app.put('/api/profile', authenticateToken, (req, res) => {
     const { username, age, gender, weight, height, goal_weight, activity, profile_image } = req.body;
+
+    // Input Validation — username ใช้ fallback จาก token ถ้าว่าง
+    const safeUsername = (username || req.user.username || '').trim();
+    if (!safeUsername || safeUsername.length < 1 || safeUsername.length > 50) {
+        return res.status(400).json({ error: "ชื่อผู้ใช้ไม่ถูกต้อง (1-50 ตัวอักษร)" });
+    }
+    const safeAge = age !== undefined && age !== '' ? parseInt(age) : null;
+    if (safeAge !== null && (isNaN(safeAge) || safeAge < 1 || safeAge > 120)) {
+        return res.status(400).json({ error: "อายุต้องเป็นตัวเลข 1-120" });
+    }
+    const safeWeight = weight !== undefined && weight !== '' ? parseFloat(weight) : null;
+    if (safeWeight !== null && (isNaN(safeWeight) || safeWeight < 1 || safeWeight > 500)) {
+        return res.status(400).json({ error: "น้ำหนักต้องเป็นตัวเลข 1-500" });
+    }
+    const safeHeight = height !== undefined && height !== '' ? parseFloat(height) : null;
+    if (safeHeight !== null && (isNaN(safeHeight) || safeHeight < 50 || safeHeight > 300)) {
+        return res.status(400).json({ error: "ส่วนสูงต้องเป็นตัวเลข 50-300" });
+    }
+    const safeGoalWeight = goal_weight !== undefined && goal_weight !== '' ? parseFloat(goal_weight) : null;
+    if (safeGoalWeight !== null && (isNaN(safeGoalWeight) || safeGoalWeight < 1 || safeGoalWeight > 500)) {
+        return res.status(400).json({ error: "น้ำหนักเป้าหมายต้องเป็นตัวเลข 1-500" });
+    }
+    const allowedGenders = ['male', 'female', 'other', ''];
+    if (gender !== undefined && !allowedGenders.includes(gender)) {
+        return res.status(400).json({ error: "ข้อมูลเพศไม่ถูกต้อง" });
+    }
+    const allowedActivities = ['general', 'bodybuilder'];
+    if (activity !== undefined && !allowedActivities.includes(activity)) {
+        return res.status(400).json({ error: "ข้อมูลประเภทกิจกรรมไม่ถูกต้อง" });
+    }
 
     // Log payload size for debugging
     if (profile_image) {
@@ -451,7 +516,7 @@ app.put('/api/profile', authenticateToken, (req, res) => {
 
     // อัปเดตข้อมูลผู้ใช้ (รวม Username และ Profile Image)
     const sql = `UPDATE users SET username = ?, age = ?, gender = ?, weight = ?, height = ?, goal_weight = ?, activity = ?, profile_image = ? WHERE id = ?`;
-    db.run(sql, [username, age, gender, weight, height, goal_weight, activity, profile_image, req.user.id], function (err) {
+    db.run(sql, [safeUsername, safeAge, gender || null, safeWeight, safeHeight, safeGoalWeight, activity || 'general', profile_image || null, req.user.id], function (err) {
         if (err) {
             console.error('❌ Database error updating profile:', err);
             return res.status(500).json({ error: err.message });
@@ -479,9 +544,9 @@ app.get('/api/history', authenticateToken, async (req, res) => {
         };
 
         const [bmiRows, foodRows, planRows] = await Promise.all([
-            queryDB(`SELECT bmi, weight, height, status, datetime(created_at, 'localtime') as created_at FROM bmi_history WHERE user_id = ? ORDER BY id DESC LIMIT ? OFFSET ?`, [userId, limit + 1, offset]),
-            queryDB(`SELECT food_name, analysis, datetime(created_at, 'localtime') as created_at FROM saved_foods WHERE user_id = ? ORDER BY id DESC LIMIT ? OFFSET ?`, [userId, limit + 1, offset]),
-            queryDB(`SELECT plan_details, datetime(created_at, 'localtime') as created_at FROM user_plans WHERE user_id = ? ORDER BY id DESC LIMIT ? OFFSET ?`, [userId, limit + 1, offset])
+            queryDB(`SELECT id, bmi, weight, height, status, datetime(created_at, 'localtime') as created_at FROM bmi_history WHERE user_id = ? ORDER BY id DESC LIMIT ? OFFSET ?`, [userId, limit + 1, offset]),
+            queryDB(`SELECT id, food_name, analysis, datetime(created_at, 'localtime') as created_at FROM saved_foods WHERE user_id = ? ORDER BY id DESC LIMIT ? OFFSET ?`, [userId, limit + 1, offset]),
+            queryDB(`SELECT id, plan_details, datetime(created_at, 'localtime') as created_at FROM user_plans WHERE user_id = ? ORDER BY id DESC LIMIT ? OFFSET ?`, [userId, limit + 1, offset])
         ]);
 
         const hasMore = (bmiRows.length > limit || foodRows.length > limit || planRows.length > limit);
@@ -500,6 +565,43 @@ app.get('/api/history', authenticateToken, async (req, res) => {
 });
 
 // ==========================================
+// Bug Report Endpoint
+// ==========================================
+
+// สร้างตารางรับ bug reports
+db.run(`CREATE TABLE IF NOT EXISTS bug_reports (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    email TEXT,
+    message TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+)`);
+
+const reportLimiter = rateLimit({
+    windowMs: 60 * 60 * 1000,
+    max: 5,
+    message: { error: "ส่งรายงานบ่อยเกินไป กรุณารอ 1 ชั่วโมง" },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+
+app.post('/api/report', reportLimiter, (req, res) => {
+    const { email, message } = req.body;
+    if (!message || message.trim().length < 5) {
+        return res.status(400).json({ error: "กรุณาอธิบายปัญหาที่พบ (อย่างน้อย 5 ตัวอักษร)" });
+    }
+    const safeEmail = typeof email === 'string' ? email.trim().substring(0, 200) : null;
+    const safeMsg = message.trim().substring(0, 2000);
+    db.run(`INSERT INTO bug_reports (email, message) VALUES (?, ?)`, [safeEmail, safeMsg], function (err) {
+        if (err) {
+            console.error('❌ Bug report DB error:', err);
+            return res.status(500).json({ error: 'บันทึกรายงานไม่สำเร็จ' });
+        }
+        console.log(`🐛 Bug report #${this.lastID} received: ${safeMsg.substring(0, 80)}...`);
+        res.json({ status: 'success', message: 'ทีมงานได้รับรายงานแล้วครับ ขอบคุณมาก!' });
+    });
+});
+
+// ==========================================
 // Admin Backend Systems
 // ==========================================
 
@@ -512,10 +614,11 @@ app.get('/api/admin/stats', authenticateAdmin, (req, res) => {
         if (completed === 4) res.json(stats);
     }
 
-    db.get('SELECT COUNT(*) as c FROM users', (err, row) => { if (!err) stats.totalUsers = row.c; checkDone(); });
-    db.get('SELECT COUNT(*) as c FROM saved_foods', (err, row) => { if (!err) stats.totalScans = row.c; checkDone(); });
-    db.get('SELECT COUNT(*) as c FROM user_plans', (err, row) => { if (!err) stats.totalPlans = row.c; checkDone(); });
-    db.get('SELECT COUNT(*) as c FROM bmi_history', (err, row) => { if (!err) stats.totalBMICalcs = row.c; checkDone(); });
+    // Bug fix #3: Added null-safety check for row before accessing row.c
+    db.get('SELECT COUNT(*) as c FROM users', (err, row) => { if (!err && row) stats.totalUsers = row.c; checkDone(); });
+    db.get('SELECT COUNT(*) as c FROM saved_foods', (err, row) => { if (!err && row) stats.totalScans = row.c; checkDone(); });
+    db.get('SELECT COUNT(*) as c FROM user_plans', (err, row) => { if (!err && row) stats.totalPlans = row.c; checkDone(); });
+    db.get('SELECT COUNT(*) as c FROM bmi_history', (err, row) => { if (!err && row) stats.totalBMICalcs = row.c; checkDone(); });
 });
 
 // API ดึงรายชื่อผู้ใช้ทั้งหมด
@@ -542,6 +645,50 @@ app.delete('/api/admin/users/:id', authenticateAdmin, (req, res) => {
             if (err) return res.status(500).json({ error: err.message });
             res.json({ success: true, message: "User completely deleted" });
         });
+    });
+});
+
+// ==========================================
+// Admin: ดู Bug Reports
+// ==========================================
+app.get('/api/admin/bug-reports', authenticateAdmin, (req, res) => {
+    db.all(`SELECT id, email, message, created_at FROM bug_reports ORDER BY id DESC LIMIT 100`, [], (err, rows) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json(rows);
+    });
+});
+
+app.delete('/api/admin/bug-reports/:id', authenticateAdmin, (req, res) => {
+    db.run(`DELETE FROM bug_reports WHERE id = ?`, [req.params.id], function (err) {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ success: true });
+    });
+});
+
+// ==========================================
+// User History Delete Endpoints
+// ==========================================
+app.delete('/api/history/bmi/:id', authenticateToken, (req, res) => {
+    db.run(`DELETE FROM bmi_history WHERE id = ? AND user_id = ?`, [req.params.id, req.user.id], function (err) {
+        if (err) return res.status(500).json({ error: err.message });
+        if (this.changes === 0) return res.status(404).json({ error: 'ไม่พบข้อมูล' });
+        res.json({ success: true });
+    });
+});
+
+app.delete('/api/history/food/:id', authenticateToken, (req, res) => {
+    db.run(`DELETE FROM saved_foods WHERE id = ? AND user_id = ?`, [req.params.id, req.user.id], function (err) {
+        if (err) return res.status(500).json({ error: err.message });
+        if (this.changes === 0) return res.status(404).json({ error: 'ไม่พบข้อมูล' });
+        res.json({ success: true });
+    });
+});
+
+app.delete('/api/history/plan/:id', authenticateToken, (req, res) => {
+    db.run(`DELETE FROM user_plans WHERE id = ? AND user_id = ?`, [req.params.id, req.user.id], function (err) {
+        if (err) return res.status(500).json({ error: err.message });
+        if (this.changes === 0) return res.status(404).json({ error: 'ไม่พบข้อมูล' });
+        res.json({ success: true });
     });
 });
 
