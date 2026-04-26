@@ -41,7 +41,7 @@ window.checkLoginStatus = function () {
         const navProfilePic = document.getElementById('nav-profile-pic');
         const dashboardProfilePic = document.getElementById('dashboard-profile-pic');
 
-        fetch('/api/profile', {
+        fetch('https://newgen-backend-pyw7.onrender.com/api/profile/image', {
             headers: { 'Authorization': `Bearer ${token}` }
         })
             .then(res => res.json())
@@ -134,7 +134,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const password = document.getElementById('login-password').value;
 
             try {
-                const response = await fetch('/api/login', {
+                const response = await fetch('https://newgen-backend-pyw7.onrender.com/api/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email, password })
@@ -167,7 +167,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const password = document.getElementById('reg-password').value;
 
             try {
-                const response = await fetch('/api/register', {
+                const response = await fetch('https://newgen-backend-pyw7.onrender.com/api/register', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username, email, password })
@@ -205,7 +205,7 @@ window.forgotPassword = async function (e) {
 
     if (email) {
         try {
-            const checkRes = await fetch('/api/check-email', {
+            const checkRes = await fetch('https://newgen-backend-pyw7.onrender.com/api/check-email', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email })
@@ -225,7 +225,7 @@ window.forgotPassword = async function (e) {
                 });
 
                 if (newPassword) {
-                    const resetRes = await fetch('/api/reset-password', {
+                    const resetRes = await fetch('https://newgen-backend-pyw7.onrender.com/api/reset-password', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ email, new_password: newPassword })

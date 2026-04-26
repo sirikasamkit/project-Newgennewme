@@ -6,7 +6,7 @@ let miniChartInstance = null;
 
 window.fetchAndRenderMiniChart = async function (token) {
     try {
-        const response = await fetch('/api/history', {
+        const response = await fetch('https://newgen-backend-pyw7.onrender.com/api/history', {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         if (response.ok) {
@@ -186,7 +186,7 @@ window.generateAiPlan = async function (bmi, weight, height, status, activity, r
         const mood = localStorage.getItem(`mood_${dateKey}`) || 'neutral';
         const sleep = localStorage.getItem(`sleep_${dateKey}`) || 'not-specified';
 
-        const response = await fetch('/api/generate-plan', {
+        const response = await fetch('https://newgen-backend-pyw7.onrender.com/api/generate-plan', {
             method: 'POST',
             headers: headers,
             body: JSON.stringify({ bmi, weight, height, status, activity, mood, sleep })
@@ -311,7 +311,7 @@ window.analyzeFoodImage = async function () {
             headers['Authorization'] = `Bearer ${token}`;
         }
 
-        const response = await fetch('/api/analyze-food', {
+        const response = await fetch('https://newgen-backend-pyw7.onrender.com/api/analyze-food', {
             method: 'POST',
             headers: headers,
             body: formData
@@ -476,7 +476,7 @@ window.sendChatMessage = async function () {
     msgContainer.scrollTop = msgContainer.scrollHeight;
 
     try {
-        const response = await fetch('/api/chat', {
+        const response = await fetch('https://newgen-backend-pyw7.onrender.com/api/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ message: text })
@@ -568,7 +568,7 @@ window.shareProgress = async function () {
 
 window.checkAndAssignBadges = function (token) {
     if (!token) return;
-    fetch('/api/history', { headers: { 'Authorization': `Bearer ${token}` } })
+    fetch('https://newgen-backend-pyw7.onrender.com/api/history', { headers: { 'Authorization': `Bearer ${token}` } })
         .then(res => res.json())
         .then(data => {
             const badgeContainer = document.getElementById('user-badges');

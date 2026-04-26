@@ -4,7 +4,7 @@ const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '.env') });
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const multer = require('multer');
-const sqlite3 = require('sqlite3').verbose();
+const mysql = require('mysql2');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const rateLimit = require('express-rate-limit'); // Moved to top-level
@@ -50,8 +50,8 @@ const forgotPasswordLimiter = rateLimit({
     legacyHeaders: false,
 });
 
-// Serve static files from the Frontend directory
-app.use(express.static(path.join(__dirname, '../Frontend')));
+// (ไม่ได้เสิร์ฟไฟล์ Frontend จาก Backend แล้ว เนื่องจากแยก Frontend ไปไว้ที่ Netlify)
+// app.use(express.static(path.join(__dirname, '../Frontend')));
 
 // ตั้งค่าการเก็บไฟล์รูปภาพชั่วคราว
 const storage = multer.memoryStorage();
@@ -68,73 +68,139 @@ if (JWT_SECRET === 'newgen_super_secret_key') {
 }
 
 // ==========================================
-// Database Setup
+// Database Setup (MySQL)
 // ==========================================
 
-// ตั้งค่า Database (SQLite) - สร้างไฟล์database.sqlite ในโฟลเดอร์เดียวกัน
-const dbPath = path.resolve(__dirname, 'database.sqlite');
-const db = new sqlite3.Database(dbPath, (err) => {
+const pool = mysql.createPool({
+    host: process.env.DB_HOST || 'localhost',
+    user: process.env.DB_USER || 'root',
+    password: process.env.DB_PASS || process.env.DB_PASSWORD || '',
+    database: process.env.DB_NAME || 'newgen_db',
+    port: process.env.DB_PORT || 3306,
+    ssl: process.env.DB_HOST && process.env.DB_HOST !== 'localhost' ? { rejectUnauthorized: false } : undefined,
+    waitForConnections: true,
+    connectionLimit: 10,
+    queueLimit: 0
+});
+
+pool.getConnection((err, connection) => {
     if (err) {
-        console.error('❌ Could not connect to database', err);
+        console.error('❌ Could not connect to MySQL database:', err.message);
     } else {
-        console.log('✅ Connected to SQLite database');
+        console.log('✅ Connected to MySQL database');
+        connection.release();
     }
 });
 
-// สร้างตาราง users ถ้ายังไม่มี
+// Wrapper function เพื่อให้คำสั่ง db เดิมใช้งานกับ MySQL ได้โดยไม่ต้องแก้โค้ดใหม่ทั้งหมด
+const db = {
+    run: (sql, params, callback) => {
+        if (typeof params === 'function') {
+            callback = params;
+            params = [];
+        }
+        pool.query(sql, params || [], function (err, results) {
+            if (err) {
+                if (err.code === 'ER_DUP_ENTRY') {
+                    err.message = 'UNIQUE constraint failed';
+                }
+                if (callback) return callback(err);
+                return;
+            }
+            if (callback) {
+                callback.call({ lastID: results.insertId, changes: results.affectedRows }, null);
+            }
+        });
+    },
+    get: (sql, params, callback) => {
+        if (typeof params === 'function') {
+            callback = params;
+            params = [];
+        }
+        pool.query(sql, params || [], (err, results) => {
+            if (err) return callback(err);
+            callback(null, results && results.length > 0 ? results[0] : null);
+        });
+    },
+    all: (sql, params, callback) => {
+        if (typeof params === 'function') {
+            callback = params;
+            params = [];
+        }
+        pool.query(sql, params || [], (err, results) => {
+            if (err) return callback(err);
+            callback(null, results || []);
+        });
+    },
+    serialize: (callback) => {
+        callback();
+    }
+};
+
+// สร้างตารางแบบ MySQL
 db.serialize(() => {
     db.run(`CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        username TEXT,
-        email TEXT UNIQUE,
-        password TEXT
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        username VARCHAR(255),
+        email VARCHAR(255) UNIQUE,
+        password VARCHAR(255),
+        age INT,
+        gender VARCHAR(50),
+        weight FLOAT,
+        height FLOAT,
+        goal_weight FLOAT,
+        activity VARCHAR(50) DEFAULT 'general',
+        is_admin TINYINT DEFAULT 0,
+        profile_image LONGTEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )`);
 
-    // ฟังก์ชันช่วยเพิ่ม Column (ถ้าไม่มี)
-    const addColumn = (table, column, type) => {
-        db.run(`ALTER TABLE ${table} ADD COLUMN ${column} ${type}`, (err) => { });
-    };
-
-    addColumn('users', 'age', 'INTEGER');
-    addColumn('users', 'gender', 'TEXT');
-    addColumn('users', 'weight', 'REAL');
-    addColumn('users', 'height', 'REAL');
-    addColumn('users', 'goal_weight', 'REAL');
-    addColumn('users', 'activity', 'TEXT DEFAULT "general"'); // New Column
-    addColumn('users', 'is_admin', 'INTEGER DEFAULT 0'); // 0=User, 1=Admin
-    addColumn('users', 'profile_image', 'TEXT'); // NEW: Base64 or URL
-    addColumn('users', 'created_at', 'DATETIME DEFAULT CURRENT_TIMESTAMP');
-
-    // ตารางประวัติ BMI
     db.run(`CREATE TABLE IF NOT EXISTS bmi_history (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER,
-        bmi REAL,
-        weight REAL,
-        height REAL,
-        status TEXT,
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT,
+        bmi FLOAT,
+        weight FLOAT,
+        height FLOAT,
+        status VARCHAR(255),
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY(user_id) REFERENCES users(id)
+        FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
     )`);
 
-    // ตารางประวัติอาหาร
     db.run(`CREATE TABLE IF NOT EXISTS saved_foods (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER,
-        food_name TEXT,
-        calories INTEGER,
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT,
+        food_name VARCHAR(255),
+        calories INT,
         analysis TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY(user_id) REFERENCES users(id)
+        FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
     )`);
 
-    // ตารางแผนสุขภาพ
     db.run(`CREATE TABLE IF NOT EXISTS user_plans (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER,
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT,
         plan_details TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-        FOREIGN KEY(user_id) REFERENCES users(id)
+        FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+    )`);
+    
+    db.run(`CREATE TABLE IF NOT EXISTS bug_reports (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        email VARCHAR(255),
+        message TEXT NOT NULL,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )`);
+
+    db.run(`CREATE TABLE IF NOT EXISTS daily_tracking (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT,
+        date DATE,
+        water_intake INT DEFAULT 0,
+        sleep_hours FLOAT DEFAULT 0,
+        mood VARCHAR(50),
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY user_date (user_id, date),
+        FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
     )`);
 });
 
@@ -170,9 +236,9 @@ const authenticateAdmin = (req, res, next) => {
 // AI & Feature Routes
 // ==========================================
 
-// Send index.html for the root route
+// Route เริ่มต้นสำหรับเช็คสถานะเซิร์ฟเวอร์
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, '../Frontend/index.html'));
+    res.json({ status: "online", message: "NeWGen NewME API is running!" });
 });
 
 app.post('/api/generate-plan', async (req, res) => {
@@ -544,9 +610,9 @@ app.get('/api/history', authenticateToken, async (req, res) => {
         };
 
         const [bmiRows, foodRows, planRows] = await Promise.all([
-            queryDB(`SELECT id, bmi, weight, height, status, datetime(created_at, 'localtime') as created_at FROM bmi_history WHERE user_id = ? ORDER BY id DESC LIMIT ? OFFSET ?`, [userId, limit + 1, offset]),
-            queryDB(`SELECT id, food_name, analysis, datetime(created_at, 'localtime') as created_at FROM saved_foods WHERE user_id = ? ORDER BY id DESC LIMIT ? OFFSET ?`, [userId, limit + 1, offset]),
-            queryDB(`SELECT id, plan_details, datetime(created_at, 'localtime') as created_at FROM user_plans WHERE user_id = ? ORDER BY id DESC LIMIT ? OFFSET ?`, [userId, limit + 1, offset])
+            queryDB(`SELECT id, bmi, weight, height, status, created_at FROM bmi_history WHERE user_id = ? ORDER BY id DESC LIMIT ? OFFSET ?`, [userId, limit + 1, offset]),
+            queryDB(`SELECT id, food_name, analysis, created_at FROM saved_foods WHERE user_id = ? ORDER BY id DESC LIMIT ? OFFSET ?`, [userId, limit + 1, offset]),
+            queryDB(`SELECT id, plan_details, created_at FROM user_plans WHERE user_id = ? ORDER BY id DESC LIMIT ? OFFSET ?`, [userId, limit + 1, offset])
         ]);
 
         const hasMore = (bmiRows.length > limit || foodRows.length > limit || planRows.length > limit);
@@ -568,13 +634,7 @@ app.get('/api/history', authenticateToken, async (req, res) => {
 // Bug Report Endpoint
 // ==========================================
 
-// สร้างตารางรับ bug reports
-db.run(`CREATE TABLE IF NOT EXISTS bug_reports (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    email TEXT,
-    message TEXT NOT NULL,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-)`);
+// (ตาราง bug_reports ย้ายไปสร้างรวมกันที่ Database Setup แล้ว)
 
 const reportLimiter = rateLimit({
     windowMs: 60 * 60 * 1000,
@@ -689,6 +749,45 @@ app.delete('/api/history/plan/:id', authenticateToken, (req, res) => {
         if (err) return res.status(500).json({ error: err.message });
         if (this.changes === 0) return res.status(404).json({ error: 'ไม่พบข้อมูล' });
         res.json({ success: true });
+    });
+});
+
+// ==========================================
+// Daily Tracking Routes (Water, Sleep, Mood)
+// ==========================================
+
+// ดึงข้อมูล Daily Tracking (ย้อนหลัง 7 วัน)
+app.get('/api/tracking', authenticateToken, (req, res) => {
+    const sql = `SELECT date, water_intake, sleep_hours, mood FROM daily_tracking 
+                 WHERE user_id = ? AND date >= DATE_SUB(CURDATE(), INTERVAL 6 DAY) 
+                 ORDER BY date ASC`;
+    db.all(sql, [req.user.id], (err, rows) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json(rows || []);
+    });
+});
+
+// บันทึก/อัปเดตข้อมูล Daily Tracking ของวันนั้น
+app.post('/api/tracking', authenticateToken, (req, res) => {
+    const { date, water_intake, sleep_hours, mood } = req.body;
+    if (!date) return res.status(400).json({ error: "Date is required" });
+
+    // UPSERT (Insert or Update) based on UNIQUE KEY user_date (user_id, date)
+    const sql = `
+        INSERT INTO daily_tracking (user_id, date, water_intake, sleep_hours, mood)
+        VALUES (?, ?, COALESCE(?, 0), COALESCE(?, 0), ?)
+        ON DUPLICATE KEY UPDATE 
+            water_intake = COALESCE(VALUES(water_intake), water_intake),
+            sleep_hours = COALESCE(VALUES(sleep_hours), sleep_hours),
+            mood = COALESCE(VALUES(mood), mood)
+    `;
+    
+    db.run(sql, [req.user.id, date, water_intake, sleep_hours, mood], function(err) {
+        if (err) {
+            console.error('❌ Tracking Sync Error:', err);
+            return res.status(500).json({ error: err.message });
+        }
+        res.json({ status: "success" });
     });
 });
 

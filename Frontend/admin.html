@@ -211,7 +211,7 @@
 
         async function loadStats(token) {
             try {
-                const res = await fetch('/api/admin/stats', { headers: { 'Authorization': `Bearer ${token}` } });
+                const res = await fetch('https://newgen-backend-pyw7.onrender.com/api/admin/stats', { headers: { 'Authorization': `Bearer ${token}` } });
                 if (res.ok) {
                     const data = await res.json();
                     document.getElementById('stat-users').innerText = data.totalUsers;
@@ -223,7 +223,7 @@
 
             // โหลดจำนวน bug reports
             try {
-                const r = await fetch('/api/admin/bug-reports', { headers: { 'Authorization': `Bearer ${token}` } });
+                const r = await fetch('https://newgen-backend-pyw7.onrender.com/api/admin/bug-reports', { headers: { 'Authorization': `Bearer ${token}` } });
                 if (r.ok) {
                     const bugs = await r.json();
                     document.getElementById('stat-bugs').innerText = bugs.length;
@@ -234,7 +234,7 @@
 
         async function loadUsers(token) {
             try {
-                const res = await fetch('/api/admin/users', { headers: { 'Authorization': `Bearer ${token}` } });
+                const res = await fetch('https://newgen-backend-pyw7.onrender.com/api/admin/users', { headers: { 'Authorization': `Bearer ${token}` } });
                 if (res.ok) {
                     const users = await res.json();
                     const tbody = document.getElementById('user-table-body');
@@ -272,7 +272,7 @@
             if (!result.isConfirmed) return;
             const token = localStorage.getItem('token');
             try {
-                const res = await fetch(`/api/admin/users/${id}`, {
+                const res = await fetch(`https://newgen-backend-pyw7.onrender.com/api/admin/users/${id}`, {
                     method: 'DELETE',
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
@@ -288,7 +288,7 @@
 
         async function loadBugReports(token) {
             try {
-                const res = await fetch('/api/admin/bug-reports', { headers: { 'Authorization': `Bearer ${token}` } });
+                const res = await fetch('https://newgen-backend-pyw7.onrender.com/api/admin/bug-reports', { headers: { 'Authorization': `Bearer ${token}` } });
                 const tbody = document.getElementById('bug-table-body');
                 if (res.ok) {
                     const bugs = await res.json();
@@ -322,7 +322,7 @@
             if (!result.isConfirmed) return;
             const token = localStorage.getItem('token');
             try {
-                const res = await fetch(`/api/admin/bug-reports/${id}`, {
+                const res = await fetch(`https://newgen-backend-pyw7.onrender.com/api/admin/bug-reports/${id}`, {
                     method: 'DELETE',
                     headers: { 'Authorization': `Bearer ${token}` }
                 });

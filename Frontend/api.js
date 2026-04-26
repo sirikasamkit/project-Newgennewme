@@ -6,7 +6,7 @@ window.loadProfile = async function () {
     const token = localStorage.getItem('token');
     if (!token) return;
     try {
-        const response = await fetch('/api/profile', {
+        const response = await fetch('https://newgen-backend-pyw7.onrender.com/api/profile', {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         if (response.ok) {
@@ -26,7 +26,7 @@ window.loadProfile = async function () {
             // \u0e42\u0e2b\u0e25\u0e14\u0e23\u0e39\u0e1b\u0e42\u0e1b\u0e23\u0e44\u0e1f\u0e25\u0e4c\u0e41\u0e22\u0e01\u0e15\u0e48\u0e32\u0e07\u0e2b\u0e32\u0e01 (\u0e40\u0e1e\u0e37\u0e48\u0e2d\u0e44\u0e21\u0e48\u0e43\u0e2b\u0e49 Base64 \u0e43\u0e2b\u0e0d\u0e48\u0e15\u0e34\u0e14\u0e04\u0e49\u0e32\u0e07\u0e17\u0e38\u0e01 API call)
             const previewEl = document.getElementById('profile-preview');
             if (previewEl) {
-                fetch('/api/profile/image', { headers: { 'Authorization': `Bearer ${token}` } })
+                fetch('https://newgen-backend-pyw7.onrender.com/api/profile/image', { headers: { 'Authorization': `Bearer ${token}` } })
                     .then(r => r.json())
                     .then(imgData => {
                         if (imgData.profile_image) {
@@ -96,11 +96,18 @@ window.saveProfile = async function () {
 
     // Log ขนาดรูปที่จะ save
     if (profile_image) {
-        console.log(`📸 Sending profile image size: ${(profile_image.length / 1024).toFixed(2)} KB`);
+        const sizeKB = profile_image.length / 1024;
+        console.log(`📸 Sending profile image size: ${sizeKB.toFixed(2)} KB`);
+        
+        // Prevent sending payload > 1.5MB to avoid CORS/Proxy connection drops
+        if (sizeKB > 1500) {
+            if (window.showToast) window.showToast('error', 'ไฟล์รูปภาพใหญ่เกินไป (เกิน 1.5MB) ระบบเครือข่ายปฏิเสธการเชื่อมต่อ กรุณาลองแคปหน้าจอก่อนอัปโหลดครับ');
+            return;
+        }
     }
 
     try {
-        const response = await fetch('/api/profile', {
+        const response = await fetch('https://newgen-backend-pyw7.onrender.com/api/profile', {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
@@ -322,7 +329,7 @@ window.loadHistory = async function (page = 1, append = false) {
 
 
     try {
-        const response = await fetch(`/api/history?page=${page}`, {
+        const response = await fetch(`https://newgen-backend-pyw7.onrender.com/api/history?page=${page}`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         
@@ -471,7 +478,7 @@ window.deleteHistoryItem = async function (type, id) {
     if (!endpoint) return;
 
     try {
-        const res = await fetch(`/api/history/${endpoint}/${id}`, {
+        const res = await fetch(`https://newgen-backend-pyw7.onrender.com/api/history/${endpoint}/${id}`, {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -556,6 +563,8 @@ window.addWater = function () {
     const newCount = count + 1;
     localStorage.setItem(window.getWaterKey(), newCount);
     window.renderWaterTracker();
+    if (window.renderWeeklySnapshots) window.renderWeeklySnapshots();
+    if (window.syncTrackingToBackend) window.syncTrackingToBackend();
     if (newCount >= 8) {
         if (window.showToast) window.showToast('success', 'ยอดเยี่ยม! ครบ 8 แก้วแล้ว 🏆💧');
     } else {
@@ -566,6 +575,8 @@ window.addWater = function () {
 window.resetWater = function () {
     localStorage.setItem(window.getWaterKey(), 0);
     window.renderWaterTracker();
+    if (window.renderWeeklySnapshots) window.renderWeeklySnapshots();
+    if (window.syncTrackingToBackend) window.syncTrackingToBackend();
 }
 
 const getWellnessDateKey = () => new Date().toISOString().split('T')[0];
@@ -575,6 +586,7 @@ window.setMood = function (mood) {
     updateMoodUI(mood);
     if (window.playPremiumSound) window.playPremiumSound('pop');
     if (window.showToast) window.showToast('success', `บันทึกอารมณ์ของคุณแล้ว ✨`);
+    if (window.syncTrackingToBackend) window.syncTrackingToBackend();
 }
 
 function updateMoodUI(activeMood) {
@@ -606,15 +618,58 @@ window.saveSleep = function () {
     localStorage.setItem(`sleep_${getWellnessDateKey()}`, hours);
     if (window.playPremiumSound) window.playPremiumSound('confirm');
     if (window.showToast) window.showToast('success', `บันทึกเวลาการนอน ${hours} ชม. เรียบร้อย 🌙`);
+    if (window.renderWeeklySnapshots) window.renderWeeklySnapshots();
+    if (window.syncTrackingToBackend) window.syncTrackingToBackend();
 }
 
-window.initWellnessSection = function () {
+window.syncTrackingToBackend = function() {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+    const dateKey = getWellnessDateKey();
+    const payload = {
+        date: dateKey,
+        water_intake: parseInt(localStorage.getItem(`water_intake_${dateKey}`)) || 0,
+        sleep_hours: parseFloat(localStorage.getItem(`sleep_${dateKey}`)) || 0,
+        mood: localStorage.getItem(`mood_${dateKey}`) || null
+    };
+
+    fetch('https://newgen-backend-pyw7.onrender.com/api/tracking', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify(payload)
+    }).catch(err => console.error('Failed to sync tracking data:', err));
+}
+
+window.initWellnessSection = async function () {
+    const token = localStorage.getItem('token');
+    if (token) {
+        try {
+            const res = await fetch('https://newgen-backend-pyw7.onrender.com/api/tracking', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                data.forEach(row => {
+                    const dateKey = new Date(row.date).toLocaleDateString('en-CA');
+                    localStorage.setItem(`water_intake_${dateKey}`, row.water_intake);
+                    localStorage.setItem(`sleep_${dateKey}`, row.sleep_hours);
+                    if (row.mood) localStorage.setItem(`mood_${dateKey}`, row.mood);
+                });
+            }
+        } catch(e) {
+            console.error('Failed to fetch tracking data', e);
+        }
+    }
+
     const dateKey = getWellnessDateKey();
     const savedMood = localStorage.getItem(`mood_${dateKey}`);
     const savedSleep = localStorage.getItem(`sleep_${dateKey}`);
 
     if (savedMood) updateMoodUI(savedMood);
     if (savedSleep) document.getElementById('sleep-hours').value = savedSleep;
+    
+    if (window.renderWaterTracker) window.renderWaterTracker();
+    if (window.renderWeeklySnapshots) window.renderWeeklySnapshots();
 }
 
 window.updateStreak = function () {
@@ -653,7 +708,8 @@ window.renderWeeklySnapshots = function () {
     const sleepCtx = document.getElementById('weeklySleepChart');
     if (!waterCtx || !sleepCtx) return;
 
-    const days = ['จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.', 'อา.'];
+    const dayNames = ['อา.', 'จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.'];
+    const labels = [];
 
     // ดึงข้อมูลจริงจาก localStorage สำหรับ 7 วันย้อนหลัง
     const waterData = [];
@@ -662,6 +718,7 @@ window.renderWeeklySnapshots = function () {
     for (let i = 6; i >= 0; i--) {
         const d = new Date(today);
         d.setDate(today.getDate() - i);
+        labels.push(dayNames[d.getDay()]);
         const dateKey = d.toLocaleDateString('en-CA'); // YYYY-MM-DD
         waterData.push(parseInt(localStorage.getItem(`water_intake_${dateKey}`)) || 0);
         sleepData.push(parseFloat(localStorage.getItem(`sleep_${dateKey}`)) || 0);
@@ -676,7 +733,7 @@ window.renderWeeklySnapshots = function () {
     weeklyWaterChartInstance = new Chart(waterCtx, {
         type: 'bar',
         data: {
-            labels: days,
+            labels: labels,
             datasets: [{ label: 'แก้ว', data: waterData, backgroundColor: '#38bdf8', borderRadius: 5 }]
         },
         options: {
@@ -688,7 +745,7 @@ window.renderWeeklySnapshots = function () {
     weeklySleepChartInstance = new Chart(sleepCtx, {
         type: 'line',
         data: {
-            labels: days,
+            labels: labels,
             datasets: [{ label: 'ชม.', data: sleepData, borderColor: '#4f46e5', tension: 0.4, fill: false, borderWidth: 2, pointRadius: 3 }]
         },
         options: {
