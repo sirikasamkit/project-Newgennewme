@@ -2,23 +2,37 @@ const mysql = require('mysql2');
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
 const fs = require('fs');
+
+// Load environment variables cleanly
+require('dotenv').config();
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
 require('dotenv').config({ path: path.join(__dirname, '../../.env') });
 
-const dataDir = path.join(__dirname, '../../data');
-if (!fs.existsSync(dataDir)) {
-    fs.mkdirSync(dataDir, { recursive: true });
+// Safe data directory inside backend folder
+let dataDir = path.join(process.cwd(), 'data');
+try {
+    if (!fs.existsSync(dataDir)) {
+        fs.mkdirSync(dataDir, { recursive: true });
+    }
+} catch (e) {
+    dataDir = '/tmp'; // Fallback to /tmp on restricted cloud environments
 }
 
-let activeDriver = 'mysql'; // 'mysql' | 'sqlite'
+let activeDriver = 'mysql';
 let pool = null;
 let sqliteDb = null;
 
-// Initialize SQLite instance
-const sqliteFile = path.join(dataDir, 'app.sqlite');
-sqliteDb = new sqlite3.Database(sqliteFile);
+// Initialize SQLite with safe path
+try {
+    const sqliteFile = path.join(dataDir, 'app.sqlite');
+    sqliteDb = new sqlite3.Database(sqliteFile);
+} catch (e) {
+    sqliteDb = new sqlite3.Database(':memory:');
+}
 
 // Helper to initialize tables on SQLite
 const initSqliteTables = () => {
+    if (!sqliteDb) return;
     sqliteDb.serialize(() => {
         sqliteDb.run(`CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -99,12 +113,13 @@ try {
         ssl: process.env.DB_HOST && process.env.DB_HOST !== 'localhost' ? { rejectUnauthorized: false } : undefined,
         waitForConnections: true,
         connectionLimit: 10,
-        queueLimit: 0
+        queueLimit: 0,
+        connectTimeout: 5000
     });
 
     pool.getConnection((err, connection) => {
         if (err) {
-            console.log('ℹ️ MySQL is not running on localhost:3306 -> Switched to SQLite mode (data/app.sqlite) seamlessly.');
+            console.log('ℹ️ MySQL is not running on localhost:3306 -> Switched to SQLite mode seamlessly.');
             activeDriver = 'sqlite';
         } else {
             console.log('✅ Connected to MySQL database');
