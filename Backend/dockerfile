@@ -1,13 +1,14 @@
-FROM node:18
+FROM node:20-alpine
 
-WORKDIR /usr/src/app
+WORKDIR /app
 
-# ก๊อปปี้ไฟล์การตั้งค่า Library
+# Install dependencies first for caching
 COPY package*.json ./
-RUN npm install
+RUN npm install --production
 
-# ก๊อปปี้โค้ดทั้งหมด (รวมถึง server.js)
+# Copy application source
 COPY . .
 
 EXPOSE 5000
-CMD ["node", "server.js"]
+
+CMD ["node", "src/server.js"]
